@@ -355,24 +355,27 @@
   /* ============ 설치 유도 배너 ============ */
   .install-bar{
     position:fixed;left:0;right:0;bottom:0;z-index:70;display:none;
-    padding:var(--s3) 26px calc(var(--s3) + env(safe-area-inset-bottom));
-    background:var(--ink-deep);color:var(--bg);
+    margin:0 auto;max-width:560px;
+    padding:var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom));
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r-md) var(--r-md) 0 0;color:var(--ink);
     align-items:center;gap:var(--s3);
-    box-shadow:0 -8px 24px -16px rgba(26,24,21,.6);
+    box-shadow:var(--shadow-float);
     animation:barUp var(--dur-slow) var(--ease-out);
   }
   .install-bar.show{display:flex;}
   @keyframes barUp{from{transform:translateY(100%);}to{transform:none;}}
-  .install-bar .txt{flex:1;min-width:0;font-size:13px;line-height:1.4;}
+  .install-bar .txt{flex:1;min-width:0;font-size:13px;line-height:1.45;}
   .install-bar .txt b{display:block;font-size:14px;font-weight:600;}
-  .install-bar .txt span{color:var(--ink-dim);font-size:12px;}
+  .install-bar .txt span{color:var(--ink-soft);font-size:12px;}
   .install-bar .go{
     flex-shrink:0;border:none;background:var(--accent);color:var(--accent-fg);
     font-size:13px;font-weight:600;min-height:44px;padding:0 var(--s4);border-radius:var(--r-sm);
   }
+  .install-bar.ios .go{display:none;}   /* iOS는 직접 설치를 띄울 수 없어 안내만 */
   .install-bar .close{
-    flex-shrink:0;border:none;background:transparent;color:var(--ink-dim);
-    font-size:18px;min-width:44px;min-height:44px;line-height:1;
+    flex-shrink:0;border:none;background:transparent;color:var(--ink-soft);
+    font-size:16px;min-width:44px;min-height:44px;line-height:1;
   }
 
   /* ============ a11y ============ */
@@ -451,7 +454,7 @@
 
 <!-- 설치 유도 — 주문 1건 이상 담긴 뒤에만 노출 -->
 <div class="install-bar" id="installBar">
-  <div class="txt"><b>홈 화면에 추가</b><span>앱처럼 바로 열 수 있어요</span></div>
+  <div class="txt"><b>홈 화면에 추가</b><span id="installHint">앱처럼 바로 열 수 있어요</span></div>
   <button class="go" onclick="doInstall()">추가</button>
   <button class="close" onclick="dismissInstall()" aria-label="설치 안내 닫기">✕</button>
 </div>
@@ -887,12 +890,27 @@ window.addEventListener('beforeinstallprompt', (e)=>{
   deferredPrompt = e;
   maybeShowInstall();
 });
+
+// iOS Safari는 beforeinstallprompt가 없어 직접 설치를 띄울 수 없다 → 안내 문구로 대체
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                     navigator.standalone === true;
+
 function installDismissed(){
   try{ return localStorage.getItem('installDismissed') === '1'; }catch(e){ return false; }
 }
 function maybeShowInstall(){
-  if(!deferredPrompt || installDismissed() || !orders.length) return;
-  document.getElementById('installBar').classList.add('show');
+  if(installDismissed() || isStandalone || !orders.length) return;
+  const bar = document.getElementById('installBar');
+  if(isIOS){
+    bar.classList.add('ios');
+    document.getElementById('installHint').textContent = '공유 버튼 → "홈 화면에 추가"';
+    bar.classList.add('show');
+    return;
+  }
+  if(!deferredPrompt) return;
+  bar.classList.add('show');
 }
 function dismissInstall(){
   document.getElementById('installBar').classList.remove('show');
