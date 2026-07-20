@@ -201,11 +201,46 @@
     min-height:44px;padding:0 var(--s2);margin-right:calc(var(--s2) * -1);
   }
 
-  .order-card{background:var(--surface);border-radius:22px;padding:var(--s2) 6px;box-shadow:var(--shadow-card);}
-  .o-row{display:flex;align-items:center;gap:var(--s3);padding:14px;}
-  .o-row + .o-row{border-top:1px solid var(--line);}
+  .order-card{background:var(--surface);border-radius:22px;padding:var(--s2) 6px;box-shadow:var(--shadow-card);overflow:hidden;}
+
+  /* 스와이프 삭제 — 행을 왼쪽으로 밀면 뒤에서 삭제 버튼이 드러난다 */
+  .o-wrap{position:relative;overflow:hidden;}
+  .o-wrap + .o-wrap{border-top:1px solid var(--line);}
+  .o-del{
+    position:absolute;top:0;right:0;height:100%;width:96px;border:none;
+    background:var(--accent);color:var(--accent-fg);font-size:14px;font-weight:600;
+  }
+  .o-row{
+    position:relative;background:var(--surface);
+    display:flex;align-items:center;gap:var(--s3);padding:14px;
+    transition:transform var(--dur-fast) var(--ease-out);
+    touch-action:pan-y;
+  }
+  .o-row.swiped{transform:translateX(-96px);}
   .o-main{flex:1;min-width:0;}
-  .o-name{font-size:16px;color:var(--ink);font-weight:500;letter-spacing:-.01em;}
+  .o-name{
+    font-size:16px;color:var(--ink);font-weight:500;letter-spacing:-.01em;
+    cursor:text;border-bottom:1px dashed transparent;
+  }
+  .o-name:active{border-bottom-color:var(--line-strong);}
+  .o-name input, .o-who input{
+    width:100%;font:inherit;color:inherit;letter-spacing:inherit;
+    background:transparent;border:none;border-bottom:1.5px solid var(--accent);
+    padding:0;outline:none;
+  }
+  .o-who{cursor:text;}
+  /* 편집 중 자주 쓰는 값 칩 — 가로 스크롤 */
+  .edit-chips{
+    display:flex;gap:6px;margin-top:10px;overflow-x:auto;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .edit-chips::-webkit-scrollbar{display:none;}
+  .edit-chip{
+    flex:0 0 auto;border:1px solid var(--line-strong);background:var(--bg);
+    color:var(--ink);font-size:12.5px;border-radius:999px;
+    padding:8px 12px;min-height:36px;white-space:nowrap;
+  }
+  .edit-chip:active{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);}
   .o-who{font-size:12px;color:var(--ink-soft);margin-top:3px;line-height:1.7;}
   .o-qty{
     width:34px;height:34px;flex-shrink:0;border-radius:50%;
@@ -321,7 +356,20 @@
     opacity:0;transform:translateY(16px);animation:bIn .45s var(--ease-out) forwards;
   }
   @keyframes bIn{to{opacity:1;transform:none;}}
-  #board .b-name{font-size:37px;color:#F2EEE6;font-weight:500;letter-spacing:-.01em;line-height:1.15;}
+  #board .b-main{flex:1;min-width:0;}   /* min-width:0 이 있어야 말줄임이 동작한다 */
+  #board .b-name{
+    font-size:36px;color:#F2EEE6;font-weight:500;letter-spacing:-.01em;line-height:1.15;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    overflow-wrap:anywhere;
+  }
+  #board .b-who{
+    font-size:14px;color:rgba(242,238,230,.55);margin-top:6px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  /* 항목이 많으면 스크롤 대신 한 화면에 담는다 (이름 폰트는 24px 아래로 내리지 않음) */
+  #board .b-list.dense .b-row{padding:var(--s2) 2px;}
+  #board .b-list.dense .b-qty{font-size:38px;}
+  #board .b-list.dense .b-who{font-size:13px;margin-top:3px;}
   #board .b-qty{
     font-family:var(--font-display);font-size:48px;line-height:.9;color:var(--board-amber);
     text-shadow:0 0 16px rgba(244,183,64,.6), 0 0 34px rgba(244,183,64,.3);
@@ -344,7 +392,8 @@
     #board .b-head{margin-top:var(--s3);}
     #board .b-list{justify-content:flex-start;gap:0;}
     #board .b-row{padding:var(--s2) 2px;}
-    #board .b-name{font-size:26px;}
+    #board .b-name{font-size:26px;-webkit-line-clamp:1;}
+    #board .b-who{font-size:12px;margin-top:2px;}
     #board .b-qty{font-size:34px;}
     #board .b-foot{padding:var(--s3) 0 var(--s4);}
     #board .b-total{padding:10px 26px;}
@@ -549,11 +598,75 @@ function saveTotalPeople(){
   }catch(e){}
 }
 
+// ---------- 메뉴 사전 ----------
+// 긴 이름이 먼저 매칭되어야 한다 ("카페라떼"가 "라떼"보다 우선)
+const MENU_DICT = [
+  '아메리카노','에스프레소','콜드브루','아인슈페너','카푸치노',
+  '카페라떼','바닐라라떼','녹차라떼','초코라떼','딸기라떼','카라멜마키아토','라떼',
+  '밀크티','아이스티','에이드','스무디','주스','콜라','사이다','물',
+].sort((a,b)=>b.length-a.length);
+
+// 온도·옵션 수식어 — 메뉴에 붙여서 유지한다
+const MENU_MODIFIERS = ['아이스','핫','따뜻한','차가운','연하게','진하게','샷추가','디카페인'];
+
+// 축약어 → 정식 메뉴명
+const MENU_ALIAS = [
+  [/^아아$/,                      '아이스 아메리카노'],
+  [/^뜨아$/,                      '따뜻한 아메리카노'],
+  [/^아바라$/,                    '아이스 바닐라라떼'],
+  [/^(아메|카노)$/,               '아메리카노'],
+  [/^카라멜마(끼아또|키아또|키아토)$/, '카라멜마키아토'],
+];
+
+// 어절 단위로 축약어를 정식 명칭으로 펼친다
+function expandAliases(text){
+  return text.split(' ').map(w=>{
+    for(const [re, canon] of MENU_ALIAS){ if(re.test(w)) return canon; }
+    return w;
+  }).join(' ');
+}
+
+// 자동 부여된 이름("손님3")인지 — 전광판에는 표시하지 않는다
+function isAutoName(n){ return /^손님\d+$/.test((n||'').trim()); }
+
 // ---------- name/menu 자동 분리 ----------
 function splitNameAndItem(text){
-  text = text.trim().replace(/\s+/g,' ');
+  text = expandAliases(text.trim().replace(/\s+/g,' '));
+  // 조사를 떼서 1글자만 남으면 원래 이름을 유지한다.
+  // ("성은" 같은 이름의 끝 "은"을 조사로 오인해 "성"으로 잘리는 문제)
+  const stripJosa = (w)=>{
+    const s = w.replace(/(은요|는요|이요|이에요|예요|은|는|이|가)$/,'');
+    return s.length >= 2 ? s : w;
+  };
+
+  // 1) 메뉴 사전과 일치하는 부분을 먼저 찾아 메뉴로 확정한다
+  for(const menu of MENU_DICT){
+    const idx = text.indexOf(menu);
+    if(idx === -1) continue;
+
+    const before = text.slice(0, idx).trim();
+    const after  = text.slice(idx + menu.length).trim();
+    const mods = [];
+
+    // 메뉴 바로 앞의 수식어는 메뉴에 붙인다
+    const words = before ? before.split(' ') : [];
+    while(words.length && MENU_MODIFIERS.includes(words[words.length-1])){
+      mods.unshift(words.pop());
+    }
+    // 메뉴 뒤에 온 수식어도 앞으로 끌어와 붙인다 ("아메리카노 아이스")
+    const rest = after ? after.split(' ') : [];
+    while(rest.length && MENU_MODIFIERS.includes(rest[0])){
+      mods.push(rest.shift());
+    }
+
+    const item = [...new Set(mods), menu].join(' ') + (rest.length ? ' ' + rest.join(' ') : '');
+    // 메뉴 앞에 남은 텍스트를 이름으로 본다
+    const cand = words.length ? stripJosa(words[words.length-1]) : '';
+    return { name: /^[가-힣]{2,4}$/.test(cand) ? cand : '', item: item.trim() };
+  }
+
+  // 2) 사전에 없으면 기존처럼 첫 어절을 이름으로 처리한다
   const parts = text.split(' ');
-  const stripJosa = (w)=> w.replace(/(은요|는요|이요|이에요|예요|은|는|이|가)$/,'');
   if(parts.length >= 2){
     const first = stripJosa(parts[0]);
     if(/^[가-힣]{2,4}$/.test(first)){
@@ -607,6 +720,43 @@ function setMicUI(listening, status, sub){
 
 let recog = null, running = false, pendingTimer = null;
 
+// 발화 확정 타이밍 — 실기기에서 0.8초는 너무 짧아 한 문장이 조각났다
+const SILENCE_MS = 1600;   // 무음이 이만큼 이어지면 확정
+const MERGE_MS   = 1500;   // 직전 항목 추가 후 이 시간 안에 들어온 조각은 이어붙인다
+let pendingText = '';
+let lastAddAt = 0;
+
+// 가장 마지막에 담긴 주문에 텍스트를 이어붙인다
+function mergeIntoLast(text){
+  if(!orders.length) return false;
+  const last = orders.reduce((a,b)=> a.ts >= b.ts ? a : b);
+  const merged = (last.item + ' ' + text).trim();
+  const r = splitNameAndItem(merged);
+  last.item = r.item || merged;
+  lastAddAt = Date.now();
+  saveOrders(); render();
+  setMicUI(true, '이어서 담았어요', last.item);
+  return true;
+}
+
+// 무음 타이머가 끝나면 모아둔 발화를 한 번에 확정한다
+function commitPending(){
+  const text = pendingText.trim();
+  pendingText = '';
+  if(!text) return;
+
+  // 2글자 이하 단편은 버린다
+  if(text.replace(/\s/g,'').length <= 2) return;
+
+  // 직전 항목 추가 직후면 별도 항목으로 만들지 않고 이어붙인다
+  if(Date.now() - lastAddAt < MERGE_MS && mergeIntoLast(text)) return;
+
+  const {name, item} = splitNameAndItem(text);
+  if(!item) return;
+  addOrder(name || '손님' + (orders.length+1), item);
+  setMicUI(true, '담았어요 — 다음 분!', (name ? name + ' · ' : '') + item);
+}
+
 function startFlow(){
   if(running){ stopFlow(); return; }
   if(!speechSupported){
@@ -625,16 +775,17 @@ function startFlow(){
       const t = e.results[i][0].transcript;
       if(e.results[i].isFinal) fin += t; else interim += t;
     }
-    if(interim) document.getElementById('micSub').textContent = interim;
-    if(fin.trim()){
+    // interim이 계속 들어오는 동안에는 아직 말이 끝나지 않은 것 → 확정 타이머를 리셋
+    if(interim){
+      document.getElementById('micSub').textContent = interim;
       clearTimeout(pendingTimer);
-      const text = fin.trim();
-      pendingTimer = setTimeout(()=>{
-        const {name, item} = splitNameAndItem(text);
-        if(!item) return;
-        addOrder(name || '손님' + (orders.length+1), item);
-        setMicUI(true, '담았어요 — 다음 분!', (name?name+' · ':'') + item);
-      }, 800);
+      pendingTimer = setTimeout(commitPending, SILENCE_MS);
+    }
+    if(fin.trim()){
+      // 조각난 final들을 바로 확정하지 않고 모아둔다
+      pendingText = (pendingText + ' ' + fin.trim()).trim();
+      clearTimeout(pendingTimer);
+      pendingTimer = setTimeout(commitPending, SILENCE_MS);
     }
   };
   recog.onerror = (e)=>{
@@ -660,7 +811,13 @@ function undoLast(){
 
 function groupOrders(){
   const map = new Map();
-  orders.forEach(o=>{ const k=normalize(o.item); if(!map.has(k)) map.set(k,{item:o.item,n:0}); map.get(k).n++; });
+  orders.forEach(o=>{
+    const k = menuKey(o.item);
+    if(!map.has(k)) map.set(k, {item:o.item, n:0, names:[]});
+    const g = map.get(k);
+    g.n++;
+    if(!isAutoName(o.name)) g.names.push(o.name.trim());   // 자동 이름은 제외
+  });
   return [...map.values()].sort((a,b)=>b.n-a.n);
 }
 
@@ -669,8 +826,30 @@ function showBoard(){
   if(!orders.length) return;
   if(running) stopFlow();
   const groups = groupOrders();
-  document.getElementById('boardBody').innerHTML = groups.map((g,i)=>
-    `<div class="b-row" style="animation-delay:${i*0.07}s"><span class="b-name">${escapeHtml(g.item)}</span><span class="b-qty">${g.n}</span></div>`).join('');
+  const body = document.getElementById('boardBody');
+  const dense = groups.length > 6;                    // 많으면 한 화면에 담기 위해 촘촘하게
+  body.classList.toggle('dense', dense);
+
+  // 메뉴명 길이에 따라 폰트를 줄이되 24px 아래로는 내리지 않는다
+  const nameSize = (s)=>{
+    let px = 36;
+    if(s.length > 10) px = 32;
+    if(s.length > 16) px = 28;
+    if(s.length > 22) px = 24;
+    if(dense) px = Math.max(24, px - 4);
+    return px;
+  };
+
+  body.innerHTML = groups.map((g,i)=>{
+    const who = g.names.length ? `<div class="b-who">${escapeHtml(g.names.join(', '))}</div>` : '';
+    return `<div class="b-row" style="animation-delay:${i*0.07}s">` +
+             `<div class="b-main">` +
+               `<div class="b-name" style="font-size:${nameSize(g.item)}px">${escapeHtml(g.item)}</div>` +
+               who +
+             `</div>` +
+             `<span class="b-qty">${g.n}</span>` +
+           `</div>`;
+  }).join('');
   document.getElementById('bTotalNum').textContent = orders.length;
   const n = new Date();
   const h = n.getHours();
@@ -686,7 +865,7 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path
 function copySummary(){
   if(!orders.length) return;
   const map = new Map();
-  orders.forEach(o=>{ const k=normalize(o.item); map.set(k,(map.get(k)||{item:o.item,n:0})); map.get(k).n++; });
+  orders.forEach(o=>{ const k=menuKey(o.item); map.set(k,(map.get(k)||{item:o.item,n:0})); map.get(k).n++; });
   const lines = [...map.values()].sort((a,b)=>b.n-a.n).map(g=>`${g.item} ${g.n}`);
   const txt = lines.join('\n') + `\n— 총 ${orders.length}잔`;
   const done = ()=>{
@@ -732,6 +911,141 @@ function manualAdd(){
   closeSheet();
 }
 function removeOrder(id){ orders = orders.filter(o=>o.id!==id); saveOrders(); render(); }
+
+// ---------- 인라인 편집 ----------
+// 음성 인식이 틀리는 건 전제 — 잘못 들어간 항목을 그 자리에서 고칠 수 있어야 한다.
+let editing = false;
+let speechWasRunning = false;
+
+function pauseSpeechForEdit(){
+  if(running){ speechWasRunning = true; stopFlow(); }
+}
+function resumeSpeechAfterEdit(){
+  if(speechWasRunning){ speechWasRunning = false; startFlow(); }
+}
+
+// 편집 칩 목록 — 이번 주문에 이미 나온 것 우선, 그 다음 메뉴 사전
+function chipsFor(kind){
+  if(kind === 'name'){
+    const seen = [];
+    orders.forEach(o=>{
+      const n = (o.name||'').trim();
+      if(n && !isAutoName(n) && !seen.includes(n)) seen.push(n);
+    });
+    return seen.slice(0, 14);
+  }
+  const freq = new Map();
+  orders.forEach(o=>{
+    const k = o.item.trim();
+    if(k) freq.set(k, (freq.get(k)||0) + 1);
+  });
+  const used = [...freq.entries()].sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+  const rest = MENU_DICT.filter(m=>!used.some(u=>menuKey(u)===menuKey(m)));
+  return [...used, ...rest].slice(0, 16);
+}
+
+/**
+ * @param el   .o-name 또는 .o-who 요소
+ * @param kind 'item' | 'name'
+ */
+function editField(el, kind){
+  if(editing || el.querySelector('input')) return;
+  const ids = (el.dataset.ids || '').split(',').filter(Boolean);
+  if(!ids.length) return;
+
+  editing = true;
+  pauseSpeechForEdit();                    // 수정 중에는 음성 인식 일시 정지
+
+  const old = el.textContent.trim();
+  el.textContent = '';
+  el.classList.add('editing');
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = old;
+  input.setAttribute('aria-label', kind === 'name' ? '주문자 이름 수정' : '메뉴명 수정');
+  el.appendChild(input);
+
+  // 자주 쓰는 값 칩 — 가로 스크롤
+  const chips = document.createElement('div');
+  chips.className = 'edit-chips';
+  chipsFor(kind).forEach(v=>{
+    const c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'edit-chip';
+    c.textContent = v;
+    // pointerdown에서 처리해야 input의 blur(=저장)보다 먼저 잡힌다
+    c.addEventListener('pointerdown', (e)=>{ e.preventDefault(); finish(true, v); });
+    chips.appendChild(c);
+  });
+  el.appendChild(chips);
+
+  input.focus();
+  input.select();
+
+  let done = false;
+  function finish(save, forced){
+    if(done) return;
+    done = true;
+    editing = false;
+    const v = (forced !== undefined ? forced : input.value).trim();
+    if(save && v && v !== old){
+      orders.forEach(o=>{
+        if(!ids.includes(o.id)) return;
+        if(kind === 'name') o.name = v; else o.item = v;
+      });
+      saveOrders();
+    }
+    render();                              // 그룹핑·수량 재계산
+    resumeSpeechAfterEdit();               // 편집 끝나면 자동 재개
+  }
+
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); finish(true); }
+    else if(e.key === 'Escape'){ e.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', ()=> finish(true));
+}
+function editMenu(el){ editField(el, 'item'); }
+function editName(el){ editField(el, 'name'); }
+
+// ---------- 스와이프 삭제 ----------
+function closeSwiped(except){
+  document.querySelectorAll('.o-row.swiped').forEach(r=>{ if(r!==except) r.classList.remove('swiped'); });
+}
+function attachSwipe(row){
+  let x0=0, y0=0, dx=0, mode=null;
+  row.addEventListener('touchstart', (e)=>{
+    if(e.touches.length !== 1 || editing) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    dx = 0; mode = null;
+    row.style.transition = 'none';
+  }, {passive:true});
+  row.addEventListener('touchmove', (e)=>{
+    if(e.touches.length !== 1 || editing) return;
+    const cx = e.touches[0].clientX, cy = e.touches[0].clientY;
+    const ddx = cx - x0, ddy = cy - y0;
+    // 세로 스크롤과 충돌하지 않도록 방향을 먼저 정한다
+    if(mode === null){
+      if(Math.abs(ddx) < 8 && Math.abs(ddy) < 8) return;
+      mode = Math.abs(ddx) > Math.abs(ddy) ? 'x' : 'y';
+    }
+    if(mode !== 'x') return;
+    dx = Math.max(Math.min(ddx, 0), -96);
+    row.style.transform = `translateX(${dx}px)`;
+  }, {passive:true});
+  row.addEventListener('touchend', ()=>{
+    if(editing) return;
+    row.style.transition = '';
+    row.style.transform = '';
+    if(mode === 'x'){
+      const open = dx < -40;
+      closeSwiped(row);
+      row.classList.toggle('swiped', open);
+    }
+    mode = null;
+  });
+}
 // 삭제 시 좌측으로 페이드 아웃 후 제거
 function removeOrderAnimated(id, el){
   if(reduceMotion || !el){ removeOrder(id); return; }
@@ -808,6 +1122,8 @@ function toggleView(){
   render();
 }
 function normalize(s){ return s.trim().replace(/\s+/g,' ').toLowerCase(); }
+// 그룹핑 키를 만들 때만 축약어 정규화를 적용한다 (화면 표시는 정식 메뉴명 그대로)
+function menuKey(s){ return normalize(expandAliases(normalize(s))); }
 
 // 새로 추가된 주문만 슬라이드 인 — 매 렌더마다 전체가 다시 튀지 않게
 function isNew(o){
@@ -833,15 +1149,40 @@ function render(){
   const card = document.createElement('div');
   card.className = 'order-card';
 
+  // 행 하나 = 스와이프 래퍼(삭제 버튼) + 실제 행
+  function buildRow(opts){
+    const wrap = document.createElement('div');
+    wrap.className = 'o-wrap';
+
+    const del = document.createElement('button');
+    del.className = 'o-del';
+    del.textContent = '삭제';
+    del.setAttribute('aria-label', opts.delLabel);
+    del.onclick = ()=> opts.onDelete(wrap.querySelector('.o-row'));
+
+    const row = document.createElement('div');
+    row.className = 'o-row' + (opts.isNew ? ' row-in' : '');
+    row.innerHTML = opts.html;
+
+    wrap.appendChild(del);
+    wrap.appendChild(row);
+    attachSwipe(row);
+    return wrap;
+  }
+
   if(viewMode==='flat'){
     [...orders].sort((a,b)=>a.ts-b.ts).forEach(o=>{
-      const row = document.createElement('div');
-      row.className = 'o-row' + (isNew(o) ? ' row-in' : '');
-      row.innerHTML =
-        `<div class="o-main"><div class="o-name">${escapeHtml(o.item)}</div>` +
-        `<div class="o-who">${escapeHtml(o.name)}</div></div>` +
-        `<div class="o-qty num">1</div>`;
-      card.appendChild(row);
+      card.appendChild(buildRow({
+        isNew: isNew(o),
+        delLabel: `${o.name} ${o.item} 삭제`,
+        onDelete: (row)=> removeOrderAnimated(o.id, row),
+        html:
+          `<div class="o-main">` +
+            `<div class="o-name" data-ids="${o.id}" onclick="editMenu(this)">${escapeHtml(o.item)}</div>` +
+            `<div class="o-who" data-ids="${o.id}" onclick="editName(this)">${escapeHtml(o.name)}</div>` +
+          `</div>` +
+          `<div class="o-qty num">1</div>`,
+      }));
     });
     area.appendChild(card);
     return;
@@ -849,28 +1190,33 @@ function render(){
 
   const map = new Map();
   orders.forEach(o=>{
-    const key = normalize(o.item);
+    const key = menuKey(o.item);
     if(!map.has(key)) map.set(key, {item:o.item, entries:[]});
     map.get(key).entries.push(o);
   });
   const groups = [...map.values()].sort((a,b)=>b.entries.length-a.entries.length);
 
   groups.forEach(g=>{
-    const row = document.createElement('div');
-    row.className = 'o-row' + (g.entries.some(isNew) ? ' row-in' : '');
+    const ids = g.entries.map(e=>e.id);
     const whoHtml = g.entries.map(e=>
       `<span class="name-chip">${escapeHtml(e.name)}<button data-id="${e.id}" aria-label="${escapeHtml(e.name)} 주문 삭제">✕</button></span>`
     ).join('');
-    row.innerHTML =
-      `<div class="o-main"><div class="o-name">${escapeHtml(g.item)}</div>` +
-      `<div class="o-who">${whoHtml}</div></div>` +
-      `<div class="o-qty num">${g.entries.length}</div>`;
-    card.appendChild(row);
+    card.appendChild(buildRow({
+      isNew: g.entries.some(isNew),
+      delLabel: `${g.item} ${g.entries.length}건 전체 삭제`,
+      onDelete: ()=>{ orders = orders.filter(o=>!ids.includes(o.id)); saveOrders(); render(); },
+      html:
+        `<div class="o-main">` +
+          `<div class="o-name" data-ids="${ids.join(',')}" onclick="editMenu(this)">${escapeHtml(g.item)}</div>` +
+          `<div class="o-who">${whoHtml}</div>` +
+        `</div>` +
+        `<div class="o-qty num">${g.entries.length}</div>`,
+    }));
   });
   area.appendChild(card);
 
   card.querySelectorAll('.name-chip button').forEach(btn=>{
-    btn.onclick = ()=> removeOrderAnimated(btn.dataset.id, btn.closest('.name-chip'));
+    btn.onclick = (e)=>{ e.stopPropagation(); removeOrderAnimated(btn.dataset.id, btn.closest('.name-chip')); };
   });
 }
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }

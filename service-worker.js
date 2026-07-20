@@ -6,7 +6,7 @@
  * 내용을 수정해 배포할 때는 아래 VERSION을 반드시 올릴 것.
  * 같은 오리진이 캐시 우선이라, 버전을 올리지 않으면 사용자에게 옛 화면이 계속 보인다.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `order-together-${VERSION}`;
 
 // 같은 오리진 — 반드시 캐싱되어야 하는 앱 셸
