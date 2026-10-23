@@ -222,6 +222,11 @@ tr:last-child td{border-bottom:none}
         <div class="field"><label class="f">측정 언어</label><select id="lang"></select>
           <div class="hint" style="margin-top:6px">언어마다 <b>AI가 웹을 검색하는 비율이 다릅니다.</b>
           검색을 타지 않는 언어는 콘텐츠를 고쳐도 즉시 반영되지 않습니다. 이 차이가 제안 범위를 가릅니다.</div></div>
+        <div class="field"><label class="f">반복 측정 (정밀도)</label>
+          <div class="chips" id="repeatChips"></div>
+          <div class="hint" style="margin-top:6px">AI 응답은 같은 질문에도 매번 달라집니다.
+          실측에서 동일 조건 재실행 시 검색 발동률이 <b>50% → 13%</b>로 튄 사례가 있습니다.
+          여러 번 질의해 평균을 내야 노이즈를 성과로 착각하지 않습니다.</div></div>
         <div class="field"><label class="f">검색 연동</label>
           <div class="chips" id="groundChips"></div>
           <div class="hint" style="margin-top:6px">검색을 켜면 AI가 웹을 참조한 답변을, 끄면 학습된 지식만으로 답한 결과를 봅니다. <b>둘은 결과가 다릅니다</b> — 개입 방법도 달라집니다.</div></div>
@@ -449,6 +454,7 @@ const S = {
   ground: 'off',
   tone: 'fact',
   lang: 'ko',
+  repeat: 2,
   density: null,
   snaps: JSON.parse(localStorage.getItem('av_snaps') || '[]')
 };
@@ -635,8 +641,9 @@ function detect(answer, brands){
 function updateEstimate(){
   const qs = $('#qList').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const eng = ENGINES[$('#engine').value];
-  $('#eCalls').textContent = qs.length + '회';
-  $('#eCost').textContent = won(qs.length * eng.won * (S.ground === 'on' ? 1.4 : 1));
+  const calls = qs.length * S.repeat;
+  $('#eCalls').textContent = calls + '회';
+  $('#eCost').textContent = won(calls * eng.won * (S.ground === 'on' ? 1.4 : 1));
   $('#runBtn').disabled = !qs.length || !S.key || !parseBrands().length;
 }
 
@@ -657,10 +664,29 @@ async function runScan(){
     while(queue.length){
       const { q, i } = queue.shift();
       try{
-        const r = await ask(q, { ground: S.ground === 'on' });
-        S.rows[i] = { q, answer:r.text, searched:r.searched, sources:r.sources, hits:detect(r.text, brands) };
+        const runs = [];
+        for(let k = 0; k < S.repeat; k++) runs.push(await ask(q, { ground: S.ground === 'on' }));
+
+        // 빈도 집계 — 브랜드가 n회 중 몇 번 등장했는지가 실제 노출력이다
+        const freq = {}, rankSum = {}, rankN = {};
+        runs.forEach(r => Object.entries(detect(r.text, brands)).forEach(([nm, v]) => {
+          freq[nm] = (freq[nm] || 0) + 1;
+          rankSum[nm] = (rankSum[nm] || 0) + v.rank; rankN[nm] = (rankN[nm] || 0) + 1;
+        }));
+        const hits = {};
+        Object.keys(freq).forEach(nm => { hits[nm] = { rank: rankSum[nm]/rankN[nm], freq: freq[nm]/runs.length }; });
+
+        const srcMap = {};
+        runs.forEach(r => (r.sources||[]).forEach(sv => { srcMap[sv.uri || sv.title] = sv; }));
+        S.rows[i] = {
+          q, answer: runs[0].text, runs: runs.length,
+          searched: runs.some(r => r.searched),
+          searchCount: runs.filter(r => r.searched).length,
+          sources: Object.values(srcMap), hits,
+          unstable: Object.values(hits).some(h => h.freq > 0 && h.freq < 1)
+        };
       }catch(e){
-        S.rows[i] = { q, answer:'', error:e.message, searched:false, sources:[], hits:{} };
+        S.rows[i] = { q, answer:'', error:e.message, searched:false, searchCount:0, runs:0, sources:[], hits:{} };
       }
       done++;
       $('#prog').style.width = (done / qs.length * 100) + '%';
@@ -685,10 +711,14 @@ function aggregate(){
   S.stats = S.brands.map(b => {
     const hit = rows.filter(r => r.hits[b.name]);
     const ranks = hit.map(r => r.hits[b.name].rank);
+    // 노출률은 "등장한 질문 수"가 아니라 "등장 빈도의 평균"이다.
+    // 2회 중 1회만 등장했다면 0.5로 센다.
+    const freqSum = rows.reduce((a, r) => a + (r.hits[b.name]?.freq ?? 0), 0);
     return {
       name: b.name,
       mentions: hit.length,
-      exposure: hit.length / total,
+      unstable: hit.filter(r => r.hits[b.name].freq < 1).length,
+      exposure: freqSum / total,
       avgRank: ranks.length ? ranks.reduce((a,c)=>a+c,0) / ranks.length : null,
       sov: hit.length / totalMentions,
       missing: rows.filter(r => !r.hits[b.name]).map(r => r.q)
@@ -714,7 +744,10 @@ function aggregate(){
     const doms = [...new Set((r.sources || []).map(sv => {
       try { return new URL(sv.uri).hostname.replace(/^www\./,''); } catch { return (sv.title||'').toLowerCase(); }
     }).filter(Boolean))];
-    return { q:r.q, doms, n:doms.length, searched:!!r.searched, hits:Object.keys(r.hits||{}) };
+    const runs = r.runs || 1;
+    return { q:r.q, doms, n:doms.length, searched:!!r.searched,
+             searchRate:(r.searchCount ?? (r.searched?1:0)) / runs, runs,
+             unstable:!!r.unstable, hits:Object.keys(r.hits||{}) };
   }).sort((a,b) => a.n - b.n || (b.searched - a.searched));
 }
 
@@ -772,7 +805,8 @@ function renderLeads(){
 function renderMap(){
   if(!S.density || !S.density.length){ $('#mapKpis').innerHTML=''; $('#mapTable tbody').innerHTML=''; return; }
   const d = S.density, n = d.length;
-  const searched = d.filter(x=>x.searched).length;
+  const searched = d.reduce((a,x)=>a+(x.searchRate ?? (x.searched?1:0)),0);
+  const unstable = d.filter(x=>x.unstable).length;
   const avg = d.reduce((s,x)=>s+x.n,0)/n;
   const gaps = d.filter(x=>x.n<=2).length;
   const openGaps = d.filter(x=>x.n<=2 && x.searched).length;
@@ -785,14 +819,18 @@ function renderMap(){
     <div class="kpi"><div class="k">평균 인용 출처</div><div class="v">${avg.toFixed(1)}</div>
       <div class="s">낮을수록 비어 있음</div></div>
     <div class="kpi"><div class="k">공백 질문</div><div class="v">${gaps}</div>
-      <div class="s">그중 ${gaps-openGaps}개는 검색 미발동</div></div>`;
+      <div class="s">그중 ${gaps-openGaps}개는 검색 미발동</div></div>
+    <div class="kpi"><div class="k">결과가 흔들린 질문</div><div class="v" style="color:${unstable? 'var(--warn)':'var(--ink)'}">${unstable}</div>
+      <div class="s">${d[0]?.runs>1 ? `${d[0].runs}회 반복 중 결과 불일치` : '반복 측정 꺼짐 — 변동 확인 불가'}</div></div>`;
 
   $('#mapTable tbody').innerHTML = d.map(x => {
     const tone = x.n===0 ? 'var(--good)' : x.n<=2 ? 'var(--warn)' : 'var(--ink-dim)';
     return `<tr>
       <td class="num" style="color:${tone};font-weight:700">${x.n}</td>
       <td>${esc(x.q)}</td>
-      <td><span class="pill ${x.searched?'srch':'mem'}">${x.searched?'웹검색':'학습지식'}</span></td>
+      <td><span class="pill ${x.searched?'srch':'mem'}">${x.searched?'웹검색':'학습지식'}</span>${
+        x.runs>1 ? ` <span class="hint">${Math.round(x.searchRate*100)}%</span>` : ''}${
+        x.unstable ? ' <span class="pill pend">변동</span>' : ''}</td>
       <td style="color:var(--ink-dim);font-size:11.5px">${x.doms.slice(0,4).map(esc).join(', ') || '—'}</td>
       <td>${x.hits.length ? x.hits.slice(0,3).map(h=>`<span class="pill hit">${esc(h)}</span>`).join(' ') : '<span class="pill miss">없음</span>'}</td>
     </tr>`;
@@ -815,7 +853,7 @@ function saveSnap(){
     id: Math.random().toString(36).slice(2,10),
     name: ($('#snapName').value.trim() || ('기준선 ' + new Date().toISOString().slice(0,10))),
     date: new Date().toISOString().slice(0,10),
-    lang: S.lang, engine: $('#engine').value, ground: S.ground,
+    lang: S.lang, engine: $('#engine').value, ground: S.ground, repeat: S.repeat,
     questions: S.questions.slice(),
     m: snapMetrics()
   };
@@ -904,6 +942,14 @@ function buildReport(){
   const leader = [...S.stats].sort((a,b)=>b.exposure-a.exposure)[0];
   const engLabel = ENGINES[$('#engine').value].label.split('—')[0].trim();
   const today = new Date().toISOString().slice(0,10);
+  const langLabel = LANGS[S.lang]?.label || S.lang;
+  const dens = S.density || [];
+  const searchRate = dens.length ? dens.reduce((a,x)=>a+(x.searchRate ?? (x.searched?1:0)),0) / dens.length : 0;
+  const repeats = dens[0]?.runs || 1;
+  const unstableN = dens.filter(x=>x.unstable).length;
+  const avgSrc = dens.length ? dens.reduce((a,c)=>a+c.n,0)/dens.length : 0;
+  const openGaps = dens.filter(x=>x.n<=2 && x.searched);
+  const closedGaps = dens.filter(x=>x.n<=2 && !x.searched);
 
   const srcCount = {};
   rows.forEach(r => (r.sources||[]).forEach(s => {
@@ -914,12 +960,18 @@ function buildReport(){
 
   $('#report').innerHTML = `
     <h1>${esc(name)} — AI 검색 노출 진단</h1>
-    <div class="sub">측정일 ${today} · 측정 엔진 ${esc(engLabel)} · 구매 의도 질문 ${rows.length}개 · 비교 기업 ${S.stats.length}곳</div>
+    <div class="sub">측정일 ${today} · 엔진 ${esc(engLabel)} · 언어 ${esc(langLabel)} · 구매 의도 질문 ${rows.length}개 ×
+      ${repeats}회 반복 · 비교 기업 ${S.stats.length}곳</div>
 
     <div class="grid3">
       <div><div class="k">노출률</div><div class="v">${pct(st.exposure)}</div><div class="muted" style="font-size:11.5px">${rows.length}개 중 ${st.mentions}개 질문에서 언급</div></div>
       <div><div class="k">평균 순위</div><div class="v">${st.avgRank ? st.avgRank.toFixed(1)+'위' : '—'}</div><div class="muted" style="font-size:11.5px">언급될 때의 평균 위치</div></div>
       <div><div class="k">시장 평균</div><div class="v">${pct(avgExp)}</div><div class="muted" style="font-size:11.5px">${st.exposure>=avgExp?'평균 이상':'평균 미달'}</div></div>
+    </div>
+    <div class="grid3">
+      <div><div class="k">AI 웹검색 발동률</div><div class="v">${Math.round(searchRate*100)}%</div><div class="muted" style="font-size:11.5px">개입 가능한 질문의 비율</div></div>
+      <div><div class="k">평균 인용 출처</div><div class="v">${avgSrc.toFixed(1)}</div><div class="muted" style="font-size:11.5px">낮을수록 경쟁이 비어 있음</div></div>
+      <div><div class="k">즉시 공략 질문</div><div class="v">${openGaps.length}</div><div class="muted" style="font-size:11.5px">출처 2개 이하 + 검색 발동</div></div>
     </div>
 
     <div class="box"><b>요약.</b> 구매 의도가 있는 질문 ${rows.length}개를 AI에 직접 질의한 결과,
@@ -944,26 +996,49 @@ function buildReport(){
       }).join('')}</tbody></table>`
       : '<div class="box">모든 질문에서 언급되었습니다.</div>'}
 
-    <h2>3. AI가 답을 만드는 방식</h2>
-    <div class="box">측정된 ${rows.length}개 질의 중 <b>${searched}건</b>은 AI가 웹을 검색해 답했고,
+    <h2>3. AI가 답을 만드는 방식 — 개입 가능 범위</h2>
+    <div class="box">측정된 ${rows.length}개 질의 중 <b>${searched}건(${Math.round(searchRate*100)}%)</b>은 AI가 웹을 검색해 답했고,
     <b>${rows.length - searched}건</b>은 검색 없이 학습된 지식만으로 답했습니다.<br><br>
-    이 구분이 중요한 이유: 검색을 타는 질문은 콘텐츠와 인용 확보로 비교적 빠르게 개입할 수 있지만,
-    학습 지식으로 답하는 질문은 <b>브랜드가 웹 전반에 축적된 정도</b>가 결정하므로 개선에 시간이 더 걸립니다.</div>
+    <b>이 구분이 이 리포트에서 가장 중요합니다.</b> 검색을 타는 질문은 콘텐츠와 인용 확보로 비교적 빠르게 개입할 수 있습니다.
+    반면 학습 지식으로 답하는 질문은 브랜드가 웹 전반에 축적된 정도가 결정하므로, 콘텐츠를 새로 써도 즉시 반영되지 않습니다.<br><br>
+    ${searchRate >= 0.8
+      ? '이 시장은 <b>검색 발동률이 높아 개입이 실제로 작동하는 영역</b>입니다. 콘텐츠 작업의 효과를 비교적 빠르게 확인할 수 있습니다.'
+      : searchRate >= 0.4
+      ? '이 시장은 <b>절반 정도만 검색을 탑니다.</b> 검색이 발동하는 질문부터 우선 공략하고, 나머지는 중장기로 봐야 합니다.'
+      : '이 시장은 <b>AI가 거의 검색을 하지 않습니다.</b> 콘텐츠를 새로 써도 단기간에 반영되기 어렵습니다. 짧은 기간을 약속하는 제안은 신뢰하지 마십시오.'}
+    </div>
+
+    <h2>4. 비어 있는 질문 — 우선 공략 대상</h2>
+    ${openGaps.length ? `<div class="muted" style="font-size:12.5px;margin-bottom:8px">
+      아래 질문들은 <b>AI가 웹을 검색했는데도 인용한 출처가 2개 이하</b>였습니다.
+      아직 아무도 제대로 된 답을 쓰지 않은 자리이고, 검색이 발동하므로 개입이 가능합니다.</div>
+      <table><thead><tr><th>질문</th><th style="text-align:right">현재 출처</th><th>인용되고 있는 곳</th></tr></thead><tbody>
+      ${openGaps.slice(0,12).map(g=>`<tr><td>${esc(g.q)}</td>
+        <td style="text-align:right;font-weight:700">${g.n}</td>
+        <td class="muted">${g.doms.slice(0,3).map(esc).join(', ') || '없음'}</td></tr>`).join('')}
+      </tbody></table>`
+      : '<div class="box">출처가 2개 이하이면서 검색이 발동한 질문은 없었습니다. 이 시장은 이미 인용 경쟁이 자리 잡았거나, AI가 검색을 거의 하지 않습니다.</div>'}
+    ${closedGaps.length ? `<div class="muted" style="font-size:11.5px;margin-top:8px">
+      참고: 출처가 적지만 <b>검색이 발동하지 않은 질문이 ${closedGaps.length}개</b> 더 있습니다.
+      비어 보이지만 콘텐츠로 즉시 진입하기 어려운 자리입니다.</div>` : ''}
     ${topSrc.length ? `<div style="margin-top:10px"><b style="font-size:12.5px">AI가 인용한 출처 상위</b>
       <table><tbody>${topSrc.map(([h,c])=>`<tr><td>${esc(h)}</td><td style="text-align:right">${c}회</td></tr>`).join('')}</tbody></table>
       <div class="muted" style="font-size:11.5px;margin-top:6px">이 매체들에 노출되는 것이 AI 인용으로 이어집니다.</div></div>` : ''}
 
-    <h2>4. 권고</h2>
+    <h2>5. 권고</h2>
     <ol style="margin-left:18px;font-size:13px;line-height:1.8">
-      <li>미노출 질문 ${st.missing.length}개를 우선순위로 삼아, 각 질문에 직접 답하는 콘텐츠를 만듭니다.</li>
+      <li>위 <b>비어 있는 질문 ${openGaps.length}개</b>를 가장 먼저 공략합니다. 질문 문장을 제목에 그대로 쓰고, 답을 첫 문단에 둡니다.</li>
+      <li>미노출 질문 ${st.missing.length}개 중 검색이 발동하는 것부터 순서대로 콘텐츠를 만듭니다.</li>
       <li>위 인용 출처 매체에 자사 정보가 정확히 실리도록 정리합니다.</li>
       <li>경쟁사가 1위로 나오는 질문을 분석해 어떤 근거로 선택되는지 파악합니다.</li>
       <li>월 1회 동일 질문 세트로 재측정해 변화를 추적합니다.</li>
     </ol>
 
     <div class="box" style="margin-top:22px;font-size:11.5px" class="muted">
-      <b>측정 방법.</b> 위 결과는 ${esc(engLabel)}에 동일 질문을 질의해 응답 본문에 브랜드명이 등장하는지와 등장 순서를 집계한 것입니다.
-      AI 응답은 질의 시점·계정·지역에 따라 달라질 수 있어, 단일 측정값이 아니라 추세로 해석해야 합니다.
+      <b>측정 방법.</b> 위 결과는 ${esc(engLabel)}에 ${esc(langLabel)}로 동일 질문을 질의해 응답 본문에 브랜드명이 등장하는지와 등장 순서를 집계한 것입니다.
+      각 질문을 ${repeats}회씩 질의해 등장 빈도의 평균으로 노출률을 계산했습니다.
+      ${repeats>1 ? `그중 <b>${unstableN}개 질문</b>은 반복 간 결과가 달랐습니다. ` : '반복 측정을 하지 않아 변동 폭을 확인할 수 없습니다. '}
+      AI 응답은 질의 시점·계정·지역에 따라 달라지므로, 단일 측정값이 아니라 추세로 해석해야 합니다.
       본 진단은 ${esc(engLabel)} 기준이며 다른 AI 서비스의 결과를 보장하지 않습니다.
     </div>`;
   toast('리포트 생성 완료');
@@ -1261,6 +1336,10 @@ function saveKey(){ S.key = $('#apiKey').value.trim(); localStorage.setItem('av_
   $('#groundChips').innerHTML = Object.entries(gOpts).map(([k,v])=>`<button class="chip${S.ground===k?' on':''}" data-k="${k}">${v.ko}</button>`).join('');
   $('#groundChips').onclick = e => { const b=e.target.closest('.chip'); if(!b) return; S.ground=b.dataset.k;
     $$('#groundChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.k===S.ground)); updateEstimate(); };
+  const rOpts = { 1:'1회 (최저가)', 2:'2회 (권장)', 3:'3회 (정밀)' };
+  $('#repeatChips').innerHTML = Object.entries(rOpts).map(([k,v])=>`<button class="chip${S.repeat==k?' on':''}" data-k="${k}">${v}</button>`).join('');
+  $('#repeatChips').onclick = e => { const b=e.target.closest('.chip'); if(!b) return; S.repeat=+b.dataset.k;
+    $$('#repeatChips .chip').forEach(c=>c.classList.toggle('on', +c.dataset.k===S.repeat)); updateEstimate(); };
   $('#toneChips').innerHTML = Object.entries(TONES).map(([k,v])=>`<button class="chip${S.tone===k?' on':''}" data-k="${k}">${v.ko}</button>`).join('');
   $('#toneChips').onclick = e => { const b=e.target.closest('.chip'); if(!b) return; S.tone=b.dataset.k;
     $$('#toneChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.k===S.tone)); };
