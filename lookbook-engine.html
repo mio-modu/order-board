@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LOOKBOOK ENGINE — 착용컷 수익화 스튜디오</title>
+<meta name="description" content="상품 사진 한 장으로 모델 착용컷을 만들고, 원가·마진·일일 목표까지 관리하는 수익화 스튜디오">
+<meta name="theme-color" content="#17151270">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#141210; --surface:#1C1A17; --surface-2:#232019; --surface-3:#2B271F;
+  --ink:#F5F1EA; --ink-soft:#A79F92; --ink-dim:#6F685C;
+  --line:rgba(245,241,234,.10); --line-strong:rgba(245,241,234,.22);
+  --accent:#D97642; --accent-lit:#EE8F5C; --accent-deep:#B45A2C; --accent-fg:#1A1310;
+  --good:#5FBF8A; --warn:#E3B341; --bad:#E06C5B; --info:#6FA8DC;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px; --s12:48px;
+  --r-sm:10px; --r-md:14px; --r-lg:20px;
+  --shadow:0 10px 30px -18px rgba(0,0,0,.9);
+  --font-sans:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --font-display:'Fraunces',Georgia,serif;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+a{color:var(--accent-lit)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- layout ---------- */
+.app{display:flex;flex-direction:column;min-height:100%}
+header.top{position:sticky;top:0;z-index:50;background:rgba(20,18,16,.985);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1480px;margin:0 auto;padding:var(--s3) var(--s5);display:flex;align-items:center;gap:var(--s5);flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:var(--s2);font-family:var(--font-display);font-size:19px;letter-spacing:-.01em}
+.brand b{font-weight:600}
+.brand span{font-family:var(--font-sans);font-size:11px;color:var(--ink-dim);letter-spacing:.06em;text-transform:uppercase}
+.goalbar{flex:1;min-width:220px;display:flex;align-items:center;gap:var(--s3)}
+.goalbar .track{flex:1;height:7px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.goalbar .fill{height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent-lit));width:0%;transition:width .5s var(--ease)}
+.goalbar .lbl{font-size:12px;color:var(--ink-soft);white-space:nowrap;font-variant-numeric:tabular-nums}
+.goalbar .lbl b{color:var(--ink)}
+.top-actions{display:flex;gap:var(--s2);align-items:center}
+.keydot{width:8px;height:8px;border-radius:99px;background:var(--bad)}
+.keydot.on{background:var(--good)}
+
+nav.tabs{max-width:1480px;margin:0 auto;width:100%;padding:0 var(--s5);display:flex;gap:var(--s1);overflow-x:auto}
+nav.tabs button{padding:var(--s3) var(--s4);font-size:13px;font-weight:600;color:var(--ink-dim);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
+nav.tabs button:hover{color:var(--ink-soft)}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+
+main{flex:1;max-width:1480px;margin:0 auto;width:100%;padding:var(--s6) var(--s5) var(--s12)}
+.panel{display:none}.panel.on{display:block}
+.cols{display:grid;grid-template-columns:380px 1fr;gap:var(--s6);align-items:start}
+@media(max-width:1080px){.cols{grid-template-columns:1fr}}
+
+/* ---------- cards ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s5);box-shadow:var(--shadow)}
+.card + .card{margin-top:var(--s4)}
+.card h3{font-size:13px;font-weight:600;letter-spacing:.02em;margin-bottom:var(--s4);display:flex;align-items:center;gap:var(--s2)}
+.card h3 .num{width:20px;height:20px;border-radius:99px;background:var(--accent);color:var(--accent-fg);font-size:11px;display:grid;place-items:center;font-weight:700}
+.hint{font-size:12px;color:var(--ink-dim);line-height:1.5}
+.sticky{position:sticky;top:104px;max-height:calc(100vh - 124px);overflow-y:auto;padding-right:6px;scrollbar-width:thin}
+.sticky::-webkit-scrollbar{width:6px}
+@media(max-width:1080px){.sticky{position:static;max-height:none;overflow:visible;padding-right:0}}
+
+/* ---------- form ---------- */
+label.f{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em;margin-bottom:var(--s2);text-transform:uppercase}
+.field{margin-bottom:var(--s4)}
+input[type=text],input[type=number],input[type=password],select,textarea{
+  width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:13px;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:72px;line-height:1.5}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink-dim) 50%),linear-gradient(135deg,var(--ink-dim) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+.row{display:flex;gap:var(--s2)}
+.row > *{flex:1;min-width:0}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:7px 11px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;color:var(--ink-soft);transition:all .15s}
+.chip:hover{border-color:var(--line-strong);color:var(--ink)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);padding:11px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:600;background:var(--surface-3);border:1px solid var(--line);transition:all .15s}
+.btn:hover{border-color:var(--line-strong)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.primary:hover{background:var(--accent-lit)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:7px 11px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.full{width:100%}
+
+/* ---------- dropzone ---------- */
+.drop{border:1.5px dashed var(--line-strong);border-radius:var(--r-md);padding:var(--s6) var(--s4);text-align:center;transition:all .15s;cursor:pointer;background:var(--surface-2)}
+.drop:hover,.drop.over{border-color:var(--accent);background:rgba(217,118,66,.07)}
+.drop .big{font-size:13px;font-weight:600;margin-bottom:4px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:var(--s2);margin-top:var(--s3)}
+.thumb{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--surface-3);border:1px solid var(--line)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .x{position:absolute;top:3px;right:3px;width:19px;height:19px;border-radius:99px;background:rgba(0,0,0,.72);color:#fff;font-size:11px;display:grid;place-items:center;line-height:1}
+.thumb .nm{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#fff;font-size:9px;padding:9px 4px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- estimate strip ---------- */
+.est{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-radius:var(--r-md);overflow:hidden;margin-bottom:var(--s4)}
+.est div{background:var(--surface-2);padding:var(--s3)}
+.est .k{font-size:10px;color:var(--ink-dim);letter-spacing:.04em;text-transform:uppercase}
+.est .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.est .v.good{color:var(--good)} .est .v.acc{color:var(--accent-lit)}
+
+/* ---------- results ---------- */
+.resbar{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4);flex-wrap:wrap}
+.resbar h2{font-family:var(--font-display);font-size:20px;font-weight:600}
+.spacer{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:var(--s4)}
+.shot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;transition:border-color .15s}
+.shot:hover{border-color:var(--line-strong)}
+.shot .imgwrap{position:relative;background:var(--surface-3);display:grid;place-items:center;min-height:150px}
+.shot img{width:100%;display:block;cursor:zoom-in}
+.shot .meta{padding:var(--s3);display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-dim)}
+.shot .meta .pname{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot .meta b{color:var(--ink-soft);font-weight:600}
+.shot .acts{display:flex;gap:4px;padding:0 var(--s3) var(--s3)}
+.badge{font-size:10px;padding:3px 7px;border-radius:99px;background:var(--surface-3);color:var(--ink-soft);font-weight:600;letter-spacing:.02em}
+.badge.pend{background:rgba(227,179,65,.16);color:var(--warn)}
+.badge.err{background:rgba(224,108,91,.16);color:var(--bad)}
+.badge.ok{background:rgba(95,191,138,.14);color:var(--good)}
+.spin{width:22px;height:22px;border:2.5px solid var(--line-strong);border-top-color:var(--accent);border-radius:99px;animation:sp .7s linear infinite;margin:var(--s8) auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:var(--s12) var(--s4);color:var(--ink-dim);border:1px dashed var(--line);border-radius:var(--r-lg)}
+.empty .em{font-size:28px;margin-bottom:var(--s3);opacity:.5}
+
+/* ---------- model cards ---------- */
+.models{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--s4)}
+.mcard{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-md);overflow:hidden;cursor:pointer;transition:all .15s}
+.mcard:hover{border-color:var(--line-strong)}
+.mcard.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,118,66,.16)}
+.mcard img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;background:var(--surface-3)}
+.mcard .b{padding:var(--s3)}
+.mcard .b .n{font-size:13px;font-weight:600;margin-bottom:2px}
+.mcard .b .d{font-size:11px;color:var(--ink-dim);line-height:1.4}
+
+/* ---------- table ---------- */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:10.5px;color:var(--ink-dim);letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--s4);margin-bottom:var(--s5)}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s4)}
+.kpi .k{font-size:10.5px;color:var(--ink-dim);letter-spacing:.05em;text-transform:uppercase}
+.kpi .v{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:6px;letter-spacing:-.02em}
+.kpi .s{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+.kpi.hero{background:linear-gradient(145deg,var(--accent-deep),var(--accent));border-color:transparent;color:var(--accent-fg)}
+.kpi.hero .k,.kpi.hero .s{color:rgba(26,19,16,.72)}
+
+/* ---------- misc ---------- */
+.note{background:var(--surface-2);border-left:2.5px solid var(--accent);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:var(--s3) var(--s4);font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+.note.warn{border-left-color:var(--warn)}
+.note b{color:var(--ink)}
+.prose{max-width:860px;line-height:1.75;font-size:13.5px;color:var(--ink-soft)}
+.prose h2{font-family:var(--font-display);font-size:23px;color:var(--ink);margin:var(--s8) 0 var(--s3);font-weight:600}
+.prose h2:first-child{margin-top:0}
+.prose h3{font-size:14px;color:var(--ink);margin:var(--s5) 0 var(--s2);font-weight:600}
+.prose p{margin-bottom:var(--s3)}
+.prose ul,.prose ol{margin:0 0 var(--s3) 20px}
+.prose li{margin-bottom:5px}
+.prose code{background:var(--surface-2);padding:2px 6px;border-radius:5px;font-size:12px;color:var(--accent-lit)}
+.prose b{color:var(--ink)}
+
+.lightbox{position:fixed;inset:0;z-index:200;background:rgba(10,9,8,.94);display:none;place-items:center;padding:var(--s6)}
+.lightbox.on{display:grid}
+.lightbox img{max-width:92vw;max-height:88vh;border-radius:var(--r-md)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(120%);background:var(--surface-3);border:1px solid var(--line-strong);padding:11px 18px;border-radius:99px;font-size:12.5px;z-index:300;transition:transform .3s var(--ease);box-shadow:var(--shadow)}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;z-index:150;background:rgba(10,9,8,.8);display:none;place-items:center;padding:var(--s4)}
+.modal.on{display:grid}
+.modal .box{background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--r-lg);padding:var(--s6);max-width:480px;width:100%;max-height:86vh;overflow:auto}
+.modal h3{font-family:var(--font-display);font-size:19px;margin-bottom:var(--s4);font-weight:600}
+.progress{height:5px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin:var(--s3) 0}
+.progress .b{height:100%;background:var(--accent);width:0%;transition:width .3s var(--ease)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand"><b>LOOKBOOK</b> ENGINE <span>착용컷 수익화 스튜디오</span></div>
+    <div class="goalbar">
+      <div class="track"><div class="fill" id="goalFill"></div></div>
+      <div class="lbl">오늘 <b id="goalNow">0원</b> / <span id="goalTgt">100,000원</span></div>
+    </div>
+    <div class="top-actions">
+      <span class="keydot" id="keyDot" title="API 키 상태"></span>
+      <button class="btn sm ghost" onclick="openKey()">API 키</button>
+    </div>
+  </div>
+  <nav class="tabs">
+    <button class="on" data-tab="studio">스튜디오</button>
+    <button data-tab="models">전속 모델</button>
+    <button data-tab="batch">배치 납품</button>
+    <button data-tab="money">수익 관리</button>
+    <button data-tab="play">수익화 플레이북</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ 스튜디오 ============ -->
+<section class="panel on" id="p-studio">
+  <div class="cols">
+    <div class="sticky">
+      <div class="card">
+        <h3><span class="num">1</span> 상품 사진</h3>
+        <div class="drop" id="drop">
+          <div class="big">상품 사진을 올려주세요</div>
+          <div class="hint">클릭 · 드래그 · 붙여넣기(Ctrl+V)<br>누끼/플랫컷/행거컷 모두 가능 · 여러 장 동시 가능</div>
+          <input type="file" id="fileIn" accept="image/*" multiple hidden>
+        </div>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">2</span> 상품 정보</h3>
+        <div class="field">
+          <label class="f">카테고리</label>
+          <select id="category"></select>
+        </div>
+        <div class="field">
+          <label class="f">코디 / 연출 지시 (선택)</label>
+          <textarea id="styling" placeholder="예: 블랙 와이드 슬랙스와 로퍼로 매치, 가을 데일리룩 무드"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">3</span> 모델</h3>
+        <div class="field">
+          <label class="f">전속 모델</label>
+          <select id="modelSel"><option value="">— 선택 안 함 (매번 새 모델) —</option></select>
+          <div class="hint" style="margin-top:6px">전속 모델을 지정하면 모든 컷에서 <b>같은 얼굴</b>이 유지됩니다. 셀러 재구매의 핵심 기능입니다.</div>
+        </div>
+        <div id="adhocModel">
+          <div class="row field">
+            <div><label class="f">성별</label><select id="mGender"></select></div>
+            <div><label class="f">연령대</label><select id="mAge"></select></div>
+          </div>
+          <div class="row field">
+            <div><label class="f">체형</label><select id="mBody"></select></div>
+            <div><label class="f">헤어</label><select id="mHair"></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">4</span> 컷 구성 · 배경 · 규격</h3>
+        <div class="field">
+          <label class="f">컷 종류</label>
+          <div class="chips" id="cutChips"></div>
+        </div>
+        <div class="field">
+          <label class="f">배경 / 씬</label>
+          <div class="chips" id="sceneChips"></div>
+        </div>
+        <div class="field">
+          <label class="f">출력 규격</label>
+          <div class="chips" id="ratioChips"></div>
+        </div>
+        <div class="field">
+          <label class="f">화질 등급</label>
+          <select id="tier"></select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="num">5</span> 견적 · 실행</h3>
+        <div class="est">
+          <div><div class="k">생성 컷</div><div class="v" id="eCuts">0</div></div>
+          <div><div class="k">원가</div><div class="v acc" id="eCost">0원</div></div>
+          <div><div class="k">권장 판매가</div><div class="v good" id="ePrice">0원</div></div>
+        </div>
+        <button class="btn primary full" id="runBtn" onclick="runStudio()">착용컷 생성</button>
+        <div class="hint" style="margin-top:8px" id="runHint">상품 사진을 올리면 시작할 수 있습니다.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="resbar">
+        <h2>결과물</h2>
+        <span class="badge" id="resCount">0컷</span>
+        <div class="spacer"></div>
+        <button class="btn sm" onclick="downloadAllZip('studio')">ZIP 다운로드</button>
+        <button class="btn sm ghost" onclick="clearResults()">비우기</button>
+      </div>
+      <div class="grid" id="results"></div>
+      <div class="empty" id="resEmpty">
+        <div class="em">◻︎</div>
+        <div>아직 생성된 컷이 없습니다.<br>왼쪽에서 상품 사진을 올리고 <b>착용컷 생성</b>을 눌러주세요.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 전속 모델 ============ -->
+<section class="panel" id="p-models">
+  <div class="cols">
+    <div class="sticky">
+      <div class="card">
+        <h3>새 전속 모델 만들기</h3>
+        <div class="field"><label class="f">모델 이름 (내부 관리용)</label>
+          <input type="text" id="nmName" placeholder="예: 지우 — 20대 캐주얼"></div>
+        <div class="row field">
+          <div><label class="f">성별</label><select id="nmGender"></select></div>
+          <div><label class="f">연령대</label><select id="nmAge"></select></div>
+        </div>
+        <div class="row field">
+          <div><label class="f">체형</label><select id="nmBody"></select></div>
+          <div><label class="f">헤어</label><select id="nmHair"></select></div>
+        </div>
+        <div class="row field">
+          <div><label class="f">피부톤</label><select id="nmSkin"></select></div>
+          <div><label class="f">분위기</label><select id="nmMood"></select></div>
+        </div>
+        <div class="field"><label class="f">추가 지시 (선택)</label>
+          <textarea id="nmExtra" placeholder="예: 옅은 주근깨, 단정한 눈썹, 미소는 거의 없이"></textarea></div>
+        <button class="btn primary full" onclick="createModel()">모델 생성</button>
+        <div class="hint" style="margin-top:8px">모델 1명 생성 = 레퍼런스 1컷 원가만 소모됩니다. 생성된 얼굴은 브라우저에 저장되어 이후 모든 착용컷에 재사용됩니다.</div>
+      </div>
+      <div class="card">
+        <div class="note"><b>왜 전속 모델이 돈이 되는가.</b><br>
+        셀러는 상품마다 얼굴이 바뀌는 걸 가장 싫어합니다. "우리 브랜드 전속 모델"을 한 번 정하면 그 모델이 없는 곳으로 못 옮깁니다. 이것이 월 구독 전환과 재구매의 실질적 잠금장치입니다.</div>
+      </div>
+    </div>
+    <div>
+      <div class="resbar"><h2>내 모델 라이브러리</h2><span class="badge" id="mCount">0명</span></div>
+      <div class="models" id="modelGrid"></div>
+      <div class="empty" id="mEmpty"><div class="em">◻︎</div><div>저장된 전속 모델이 없습니다.<br>왼쪽에서 첫 모델을 만들어보세요.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 배치 납품 ============ -->
+<section class="panel" id="p-batch">
+  <div class="cols">
+    <div class="sticky">
+      <div class="card">
+        <h3>배치 작업 (대량 납품)</h3>
+        <div class="field"><label class="f">고객사 / 브랜드명</label>
+          <input type="text" id="bClient" placeholder="예: 무드앤드 (스마트스토어)"></div>
+        <div class="field"><label class="f">상품 사진 일괄 업로드</label>
+          <div class="drop" id="bDrop"><div class="big">여러 상품을 한 번에</div>
+            <div class="hint">파일명이 상품명이 됩니다 · 상품당 선택한 컷 세트가 모두 생성됩니다</div>
+            <input type="file" id="bFileIn" accept="image/*" multiple hidden></div>
+          <div class="thumbs" id="bThumbs"></div></div>
+        <div class="field"><label class="f">전속 모델</label><select id="bModelSel"></select></div>
+        <div class="field"><label class="f">상품당 컷 구성</label><div class="chips" id="bCutChips"></div></div>
+        <div class="field"><label class="f">배경</label><div class="chips" id="bSceneChips"></div></div>
+        <div class="field"><label class="f">출력 규격</label><div class="chips" id="bRatioChips"></div></div>
+        <div class="field"><label class="f">화질 등급</label><select id="bTier"></select></div>
+        <div class="est">
+          <div><div class="k">총 컷</div><div class="v" id="bCuts">0</div></div>
+          <div><div class="k">원가</div><div class="v acc" id="bCost">0원</div></div>
+          <div><div class="k">견적가</div><div class="v good" id="bPrice">0원</div></div>
+        </div>
+        <button class="btn primary full" id="bRun" onclick="runBatch()">배치 생성 시작</button>
+        <div class="progress"><div class="b" id="bProg"></div></div>
+        <div class="hint" id="bStatus">대기 중</div>
+      </div>
+      <div class="card">
+        <h3>납품 산출물</h3>
+        <button class="btn full" onclick="downloadAllZip('batch')">납품 ZIP 받기</button>
+        <button class="btn full ghost" style="margin-top:8px" onclick="buildQuote()">견적서 · 납품명세 생성</button>
+      </div>
+    </div>
+    <div>
+      <div class="resbar"><h2>배치 결과</h2><span class="badge" id="bResCount">0컷</span>
+        <div class="spacer"></div>
+        <button class="btn sm ghost" onclick="retryFailed()">실패분 재시도</button></div>
+      <div class="grid" id="bResults"></div>
+      <div class="empty" id="bEmpty"><div class="em">◻︎</div><div>배치 결과가 여기에 쌓입니다.<br>상품 여러 장을 올리고 시작하세요.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 수익 관리 ============ -->
+<section class="panel" id="p-money">
+  <div class="kpis">
+    <div class="kpi hero"><div class="k">오늘 매출 (예상)</div><div class="v" id="kRev">0원</div><div class="s" id="kRevSub">목표 대비 0%</div></div>
+    <div class="kpi"><div class="k">오늘 생성 컷</div><div class="v" id="kCuts">0</div><div class="s" id="kCutsSub">성공 0 · 실패 0</div></div>
+    <div class="kpi"><div class="k">오늘 원가</div><div class="v" id="kCost">0원</div><div class="s" id="kCostSub">컷당 평균 0원</div></div>
+    <div class="kpi"><div class="k">오늘 실매출</div><div class="v" id="kActual">—</div><div class="s" id="kActualSub">실제 입금 기준</div></div>
+    <div class="kpi"><div class="k">마진율</div><div class="v" id="kMargin">—</div><div class="s">매출 − 원가 기준</div></div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h3>목표 · 단가 설정</h3>
+        <div class="field"><label class="f">일일 목표 매출</label>
+          <div class="chips" id="goalChips"></div></div>
+        <div class="field"><label class="f">직접 입력 (원)</label>
+          <input type="number" id="goalInput" step="10000"></div>
+        <div class="field"><label class="f">내 판매 단가 (컷당, 원)</label>
+          <input type="number" id="unitPrice" step="500"></div>
+        <div class="field"><label class="f">환율 (USD→KRW)</label>
+          <input type="number" id="fx" step="10"></div>
+        <button class="btn full" onclick="saveMoney()">저장</button>
+        <hr style="border:none;border-top:1px solid var(--line);margin:18px 0">
+        <div class="field"><label class="f">오늘 실제 입금액 (원)</label>
+          <input type="number" id="actualIn" step="1000" placeholder="예: 88000">
+          <div class="hint" style="margin-top:6px">위 '예상 매출'은 생성한 컷 수 × 단가입니다. 실제로 입금된 금액을 여기에 적으면 기록에 함께 남습니다.</div></div>
+        <button class="btn full ghost" onclick="saveActual()">실매출 기록</button>
+      </div>
+      <div class="card">
+        <h3>목표 역산</h3>
+        <div id="reverse" class="hint"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>채널별 권장 가격표</h3>
+        <table id="priceTable"><thead><tr><th>채널</th><th>상품 구성</th><th class="num">권장가</th><th class="num">원가</th><th class="num">마진</th></tr></thead><tbody></tbody></table>
+        <div class="hint" style="margin-top:12px">원가는 현재 선택한 화질 등급과 환율 기준으로 자동 계산됩니다. 재시도(리터치) 비용 1.6배를 미리 반영했습니다.</div>
+      </div>
+      <div class="card">
+        <h3>일별 기록</h3>
+        <table id="logTable"><thead><tr><th>날짜</th><th class="num">컷</th><th class="num">원가</th><th class="num">예상</th><th class="num">실매출</th><th class="num">달성률</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 플레이북 ============ -->
+<section class="panel" id="p-play">
+  <div class="prose" id="playbook"></div>
+</section>
+
+</main>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('on')"><img id="lightImg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="keyModal">
+  <div class="box">
+    <h3>Gemini API 키</h3>
+    <div class="field">
+      <label class="f">API Key</label>
+      <input type="password" id="apiKey" placeholder="AIza...">
+      <div class="hint" style="margin-top:8px">
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 에서 발급합니다.
+        키는 이 브라우저(localStorage)에만 저장되며 어디로도 전송되지 않습니다.
+      </div>
+    </div>
+    <div class="note warn" style="margin-bottom:16px">
+      이 앱은 서버가 없습니다. 브라우저에서 Google API를 직접 호출합니다. 그래서 <b>서버 비용이 0원</b>입니다.
+      다만 이 파일을 그대로 고객에게 배포하면 고객이 자기 키를 넣어야 하므로, 판매용으로 쓸 때는 본인 키로 본인이 직접 작업해 결과물만 납품하세요.
+    </div>
+    <div class="row">
+      <button class="btn primary" onclick="saveKey()">저장</button>
+      <button class="btn ghost" onclick="closeKey()">닫기</button>
+    </div>
+  </div>
+</div>
+<script>
+/* =========================================================================
+   LOOKBOOK ENGINE
+   상품 사진 1장 -> 판매 가능한 모델 착용컷. 서버 없음. 브라우저 단독 동작.
+   ========================================================================= */
+
+const CFG = {
+  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
+  tiers: {
+    save:  { id:'gemini-2.5-flash-image',   label:'절약 — Nano Banana (시안/대량)', usd:0.039 },
+    std:   { id:'gemini-3.1-flash-image',   label:'표준 — Nano Banana 2 (납품 기본)', usd:0.067 },
+    pro:   { id:'gemini-3-pro-image',       label:'고급 — Nano Banana Pro (메인컷)',  usd:0.134 }
+  },
+  retryMul: 1.6,          // 리터치/재생성 감안한 실질 원가 배수
+  concurrency: 2
+};
+
+const CATEGORIES = {
+  top:      { ko:'상의 (티셔츠/니트/셔츠/블라우스)', en:'top garment', wear:true },
+  outer:    { ko:'아우터 (자켓/코트/패딩/가디건)',  en:'outerwear',    wear:true },
+  dress:    { ko:'원피스 / 점프수트',               en:'dress or jumpsuit', wear:true },
+  bottom:   { ko:'하의 (팬츠/데님/슬랙스)',         en:'trousers',     wear:true },
+  skirt:    { ko:'스커트',                          en:'skirt',        wear:true },
+  shoes:    { ko:'신발',                            en:'footwear',     wear:true },
+  bag:      { ko:'가방',                            en:'handbag',      wear:true },
+  hat:      { ko:'모자',                            en:'hat',          wear:true },
+  jewel:    { ko:'주얼리 / 액세서리',               en:'jewelry accessory', wear:true, close:true },
+  glasses:  { ko:'안경 / 선글라스',                 en:'eyewear',      wear:true, close:true },
+  beauty:   { ko:'뷰티 / 화장품',                   en:'beauty product', wear:false },
+  living:   { ko:'홈 / 리빙 / 잡화',                en:'home goods product', wear:false },
+  food:     { ko:'식품 / 패키지',                   en:'packaged food product', wear:false }
+};
+
+const CUTS = {
+  front:     { ko:'정면 전신', en:'full-body front view, model facing camera directly, arms relaxed at sides' },
+  side:      { ko:'측면',     en:'full-body side profile view (90 degrees), showing the silhouette of the garment' },
+  back:      { ko:'후면',     en:'full-body back view, model facing away from camera, showing the back of the garment' },
+  detail:    { ko:'디테일 클로즈업', en:'upper-body close-up crop focusing on fabric texture, stitching and hardware details of the product' },
+  lifestyle: { ko:'연출컷',   en:'natural lifestyle moment, candid posture, slight body turn, looking away from camera' },
+  sitting:   { ko:'착좌',     en:'seated pose on a simple stool or bench, relaxed natural posture' },
+  motion:    { ko:'워킹 모션', en:'mid-stride walking motion, natural fabric movement, dynamic but sharp' }
+};
+
+const SCENES = {
+  white:  { ko:'스튜디오 화이트', en:'pure white seamless studio background, soft even diffused lighting, subtle contact shadow' },
+  beige:  { ko:'스튜디오 베이지', en:'warm beige seamless paper backdrop, soft directional key light from the left' },
+  grey:   { ko:'스튜디오 그레이', en:'light neutral grey seamless studio background, clean commercial lighting' },
+  color:  { ko:'컬러 배경',      en:'solid pastel color backdrop with a gentle gradient, editorial studio lighting' },
+  cafe:   { ko:'카페 / 실내',    en:'bright minimal cafe interior, large window with soft daylight, shallow depth of field' },
+  street: { ko:'거리 / 도심',    en:'clean urban street in daylight, softly blurred background, natural sunlight' },
+  home:   { ko:'홈 / 거실',      en:'warm minimal home interior with neutral furniture, soft afternoon window light' },
+  show:   { ko:'쇼룸',           en:'modern minimal retail showroom with neutral walls, diffused ceiling lighting' },
+  nature: { ko:'야외 / 자연광',  en:'outdoor natural setting with greenery, golden-hour backlight, airy atmosphere' }
+};
+
+const RATIOS = {
+  '1:1':  { ko:'1:1 · 스마트스토어 대표',  api:'1:1' },
+  '3:4':  { ko:'3:4 · 상세페이지/무신사',  api:'3:4' },
+  '4:5':  { ko:'4:5 · 인스타 피드',        api:'4:5' },
+  '9:16': { ko:'9:16 · 릴스/숏폼',         api:'9:16' },
+  '2:3':  { ko:'2:3 · 룩북',               api:'2:3' }
+};
+
+const MSPEC = {
+  gender: { f:['여성','Korean female'], m:['남성','Korean male'] },
+  age:    { teen:['10대 후반','late teens'], e20:['20대 초반','early 20s'], m20:['20대 중후반','mid-to-late 20s'],
+            e30:['30대','early 30s'], e40:['40대','in her/his 40s'], e50:['50대 이상','in her/his 50s'] },
+  body:   { slim:['슬림','slim slender build'], std:['표준','average healthy build'],
+            tall:['장신 모델핏','tall fashion-model proportions, 175cm'], curvy:['글래머','curvy full figure'],
+            plus:['플러스사이즈','plus-size figure'] },
+  hair:   { longs:['긴 생머리','long straight dark brown hair'], longw:['긴 웨이브','long soft wavy dark hair'],
+            bob:['단발','neat shoulder-length bob'], pony:['포니테일','hair tied in a clean ponytail'],
+            shorts:['숏컷','short cropped hair'], male:['남성 단정','short neat styled hair'] },
+  skin:   { fair:['밝은 톤','fair porcelain skin tone'], light:['자연 톤','light warm skin tone'],
+            tan:['건강한 톤','healthy tanned skin tone'], deep:['짙은 톤','deep rich skin tone'] },
+  mood:   { clean:['청순 / 단정','clean fresh natural look, minimal makeup, gentle neutral expression'],
+            chic:['시크 / 도회','chic sophisticated urban look, defined makeup, confident cool expression'],
+            lovely:['러블리','soft lovely feminine look, warm smile'],
+            sporty:['스포티','energetic sporty look, healthy glow'],
+            luxe:['럭셔리','high-end luxury editorial look, refined elegant expression'] }
+};
+
+const GOALS = [100000, 300000, 500000, 1000000];
+
+/* ---------------------------------------------------------------- state */
+const S = {
+  key: localStorage.getItem('le_key') || '',
+  products: [],        // {id,name,mime,b64,url}
+  bProducts: [],
+  results: [],         // {id,status,url,b64,label,product,ratio,tier,err}
+  bResults: [],
+  models: [],
+  sel: { cuts:['front'], scene:'white', ratio:'3:4' },
+  bSel:{ cuts:['front','side','detail'], scene:'white', ratio:'1:1' },
+  money: Object.assign(
+    { goal:100000, unit:6000, fx:1380 },
+    JSON.parse(localStorage.getItem('le_money') || '{}')),
+  log: JSON.parse(localStorage.getItem('le_log') || '{}')
+};
+
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+const today = () => new Date().toISOString().slice(0,10);
+const uid = () => Math.random().toString(36).slice(2,10);
+
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2600); }
+
+/* ---------------------------------------------------------------- IndexedDB (models) */
+let DB;
+function openDB(){
+  return new Promise(res=>{
+    const r = indexedDB.open('lookbook-engine', 1);
+    r.onupgradeneeded = e => { const db=e.target.result; if(!db.objectStoreNames.contains('models')) db.createObjectStore('models',{keyPath:'id'}); };
+    r.onsuccess = e => { DB=e.target.result; res(); };
+    r.onerror = () => res();
+  });
+}
+function dbAll(){ return new Promise(res=>{ if(!DB) return res([]);
+  const q = DB.transaction('models').objectStore('models').getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>res([]); }); }
+function dbPut(o){ return new Promise(res=>{ if(!DB) return res();
+  const t = DB.transaction('models','readwrite'); t.objectStore('models').put(o); t.oncomplete=()=>res(); }); }
+function dbDel(id){ return new Promise(res=>{ if(!DB) return res();
+  const t = DB.transaction('models','readwrite'); t.objectStore('models').delete(id); t.oncomplete=()=>res(); }); }
+
+/* ---------------------------------------------------------------- Gemini */
+async function genImage({ prompt, images = [], ratio = '3:4', tier = 'std' }){
+  if(!S.key) throw new Error('API 키가 설정되지 않았습니다.');
+  const parts = images.map(im => ({ inlineData:{ mimeType: im.mime, data: im.b64 } }));
+  parts.push({ text: prompt });
+  const body = {
+    contents: [{ parts }],
+    generationConfig: { responseModalities:['IMAGE'], imageConfig:{ aspectRatio: RATIOS[ratio].api } }
+  };
+  const url = CFG.endpoint + CFG.tiers[tier].id + ':generateContent';
+
+  let lastErr;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const res = await fetch(url, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'x-goog-api-key': S.key },
+        body: JSON.stringify(body)
+      });
+      if(res.status === 429 || res.status >= 500){
+        await new Promise(r=>setTimeout(r, 1200 * Math.pow(2, attempt)));
+        lastErr = new Error('일시적 오류 ' + res.status); continue;
+      }
+      const data = await res.json();
+      if(data.error) throw new Error(data.error.message || '요청 실패');
+      const cand = data.candidates && data.candidates[0];
+      if(!cand) throw new Error('응답에 결과가 없습니다 (안전 필터 가능성).');
+      const img = (cand.content?.parts || []).find(p => p.inlineData);
+      if(!img){
+        const txt = (cand.content?.parts || []).map(p=>p.text).filter(Boolean).join(' ');
+        throw new Error(txt ? ('이미지 대신 텍스트 반환: ' + txt.slice(0,80)) : '이미지가 생성되지 않았습니다.');
+      }
+      return { b64: img.inlineData.data, mime: img.inlineData.mimeType || 'image/jpeg' };
+    }catch(e){
+      lastErr = e;
+      if(String(e.message).includes('API key') || String(e.message).includes('PERMISSION')) break;
+      if(attempt < 2) await new Promise(r=>setTimeout(r, 900 * (attempt+1)));
+    }
+  }
+  throw lastErr || new Error('생성 실패');
+}
+
+/* ---------------------------------------------------------------- prompt engine */
+function modelClause(spec){
+  const g = MSPEC.gender[spec.gender][1], a = MSPEC.age[spec.age][1], b = MSPEC.body[spec.body][1];
+  const h = MSPEC.hair[spec.hair][1], s = MSPEC.skin[spec.skin || 'light'][1], m = MSPEC.mood[spec.mood || 'clean'][1];
+  return `a ${g} fashion model, ${a}, ${b}, ${h}, ${s}, ${m}`;
+}
+
+function buildPrompt({ cat, cut, scene, styling, modelRef, modelSpec, ratio }){
+  const C = CATEGORIES[cat];
+  const L = [];
+
+  L.push('ROLE: You are a senior e-commerce fashion photographer and retoucher producing final, publish-ready product imagery for a Korean online store.');
+
+  if(modelRef){
+    L.push('INPUT IMAGE 1 = MODEL REFERENCE (the brand exclusive model). INPUT IMAGE 2 = PRODUCT REFERENCE.');
+    L.push('IDENTITY LOCK: The person in the output MUST be the exact same person as in IMAGE 1 — identical facial structure, eyes, nose, lips, jawline, skin tone, hair color and hair length. Treat this as a fixed brand model, not a new person.');
+  }else{
+    L.push('INPUT IMAGE 1 = PRODUCT REFERENCE.');
+    L.push('MODEL: ' + modelClause(modelSpec) + '.');
+  }
+
+  if(C.wear){
+    L.push(`TASK: Produce a photorealistic studio photograph of the model actually WEARING the ${C.en} shown in the product reference image.`);
+    L.push('PRODUCT FIDELITY (highest priority): reproduce the product with 100% accuracy — exact color and shade, exact fabric texture and weave, exact pattern and print placement, exact silhouette and length, exact neckline/collar/cuff/hem construction, exact hardware (buttons, zippers, buckles) and any visible logo. Do NOT redesign, restyle, recolor, add or remove any design element.');
+    if(C.close) L.push('FRAMING NOTE: This is a small accessory — compose so the product is clearly visible and sharp, occupying a meaningful part of the frame.');
+  }else{
+    L.push(`TASK: Produce a photorealistic commercial lifestyle photograph featuring the ${C.en} from the product reference image, naturally used or held by the model in a believable scene.`);
+    L.push('PRODUCT FIDELITY (highest priority): the packaging, label text, logo, color and shape must be reproduced exactly as in the reference image. Do not invent or alter any text on the packaging.');
+  }
+
+  L.push('SHOT: ' + CUTS[cut].en + '.');
+  L.push('SETTING: ' + SCENES[scene].en + '.');
+  if(styling && styling.trim()) L.push('STYLING DIRECTION: ' + styling.trim() + '.');
+
+  L.push('TECHNICAL: shot on a full-frame camera with an 85mm lens at f/2.8, commercial color grading, true-to-life color accuracy, crisp detail on fabric, natural skin texture (no plastic smoothing), realistic shadows and contact points.');
+  L.push(`OUTPUT: a single clean ${ratio} photograph with no text, no watermark, no logo overlay, no border, no collage, no additional people.`);
+  L.push('AVOID: distorted hands or fingers, extra limbs, warped product proportions, mismatched garment color, visible AI artifacts, unnatural fabric physics.');
+
+  return L.join('\n');
+}
+
+/* ---------------------------------------------------------------- cost */
+function costPerCut(tier){ return CFG.tiers[tier].usd * S.money.fx * CFG.retryMul; }
+
+/* ---------------------------------------------------------------- UI build */
+function fillSelect(el, obj, pick){
+  el.innerHTML = Object.entries(obj).map(([k,v]) =>
+    `<option value="${k}"${k===pick?' selected':''}>${Array.isArray(v)?v[0]:(v.ko||v.label)}</option>`).join('');
+}
+function chipHTML(obj, sel, multi){
+  return Object.entries(obj).map(([k,v]) => {
+    const on = multi ? sel.includes(k) : sel === k;
+    return `<button class="chip${on?' on':''}" data-k="${k}">${v.ko}</button>`;
+  }).join('');
+}
+function wireChips(host, obj, get, set, multi, after){
+  host.innerHTML = chipHTML(obj, get(), multi);
+  host.onclick = e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    const k = b.dataset.k;
+    if(multi){
+      const cur = get().slice();
+      const i = cur.indexOf(k);
+      if(i >= 0){ if(cur.length === 1) return toast('최소 1개는 선택해야 합니다'); cur.splice(i,1); }
+      else cur.push(k);
+      set(cur);
+    } else set(k);
+    host.innerHTML = chipHTML(obj, get(), multi);
+    after && after();
+  };
+}
+
+function initUI(){
+  fillSelect($('#category'), CATEGORIES, 'top');
+  fillSelect($('#tier'), CFG.tiers, 'std');
+  fillSelect($('#bTier'), CFG.tiers, 'std');
+  ['mGender','nmGender'].forEach(id => fillSelect($('#'+id), MSPEC.gender, 'f'));
+  ['mAge','nmAge'].forEach(id => fillSelect($('#'+id), MSPEC.age, 'e20'));
+  ['mBody','nmBody'].forEach(id => fillSelect($('#'+id), MSPEC.body, 'tall'));
+  ['mHair','nmHair'].forEach(id => fillSelect($('#'+id), MSPEC.hair, 'longs'));
+  fillSelect($('#nmSkin'), MSPEC.skin, 'light');
+  fillSelect($('#nmMood'), MSPEC.mood, 'clean');
+
+  wireChips($('#cutChips'),   CUTS,   ()=>S.sel.cuts,  v=>S.sel.cuts=v,  true,  updateEstimate);
+  wireChips($('#sceneChips'), SCENES, ()=>S.sel.scene, v=>S.sel.scene=v, false, updateEstimate);
+  wireChips($('#ratioChips'), RATIOS, ()=>S.sel.ratio, v=>S.sel.ratio=v, false, updateEstimate);
+  wireChips($('#bCutChips'),   CUTS,   ()=>S.bSel.cuts,  v=>S.bSel.cuts=v,  true,  updateBatchEstimate);
+  wireChips($('#bSceneChips'), SCENES, ()=>S.bSel.scene, v=>S.bSel.scene=v, false, updateBatchEstimate);
+  wireChips($('#bRatioChips'), RATIOS, ()=>S.bSel.ratio, v=>S.bSel.ratio=v, false, updateBatchEstimate);
+
+  $('#tier').onchange  = updateEstimate;
+  $('#bTier').onchange = updateBatchEstimate;
+  $('#modelSel').onchange = () => { $('#adhocModel').style.display = $('#modelSel').value ? 'none' : 'block'; };
+
+  $$('nav.tabs button').forEach(b => b.onclick = () => {
+    $$('nav.tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    $$('.panel').forEach(p=>p.classList.remove('on'));
+    $('#p-' + b.dataset.tab).classList.add('on');
+    if(b.dataset.tab === 'money') renderMoney();
+  });
+
+  dropzone($('#drop'), $('#fileIn'), S.products, $('#thumbs'), updateEstimate);
+  dropzone($('#bDrop'), $('#bFileIn'), S.bProducts, $('#bThumbs'), updateBatchEstimate);
+  document.addEventListener('paste', e => {
+    const f = [...(e.clipboardData?.files||[])].filter(x=>x.type.startsWith('image/'));
+    if(f.length){ addFiles(f, S.products, $('#thumbs'), updateEstimate); toast(f.length + '장 붙여넣었습니다'); }
+  });
+
+  // money controls
+  $('#goalInput').value = S.money.goal;
+  $('#unitPrice').value = S.money.unit;
+  $('#fx').value = S.money.fx;
+  $('#goalChips').innerHTML = GOALS.map(g =>
+    `<button class="chip${S.money.goal===g?' on':''}" data-g="${g}">${(g/10000)}만원</button>`).join('');
+  $('#goalChips').onclick = e => { const b=e.target.closest('.chip'); if(!b) return;
+    S.money.goal = +b.dataset.g; $('#goalInput').value = S.money.goal; saveMoney(); };
+
+  $('#apiKey').value = S.key;
+  renderKeyDot();
+  renderPlaybook();
+  updateEstimate(); updateBatchEstimate(); renderGoal();
+}
+
+function dropzone(zone, input, bucket, thumbHost, after){
+  zone.onclick = () => input.click();
+  input.onchange = () => { addFiles([...input.files], bucket, thumbHost, after); input.value=''; };
+  ['dragenter','dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('over'); }));
+  zone.addEventListener('drop', e => addFiles([...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')), bucket, thumbHost, after));
+}
+
+async function addFiles(files, bucket, host, after){
+  for(const f of files){
+    const b64 = await new Promise(r => { const fr=new FileReader(); fr.onload=()=>r(fr.result.split(',')[1]); fr.readAsDataURL(f); });
+    bucket.push({ id:uid(), name:f.name.replace(/\.[^.]+$/,''), mime:f.type || 'image/jpeg', b64, url:URL.createObjectURL(f) });
+  }
+  renderThumbs(bucket, host, after); after && after();
+}
+
+function renderThumbs(bucket, host, after){
+  host.innerHTML = bucket.map(p =>
+    `<div class="thumb"><img src="${p.url}" alt=""><button class="x" data-id="${p.id}">✕</button><div class="nm">${p.name}</div></div>`).join('');
+  host.onclick = e => { const b=e.target.closest('.x'); if(!b) return;
+    const i = bucket.findIndex(x=>x.id===b.dataset.id); if(i>=0) bucket.splice(i,1);
+    renderThumbs(bucket, host, after); after && after(); };
+}
+
+/* ---------------------------------------------------------------- estimates */
+function updateEstimate(){
+  const n = S.products.length * S.sel.cuts.length;
+  const tier = $('#tier').value;
+  const cost = n * costPerCut(tier);
+  $('#eCuts').textContent  = n + '컷';
+  $('#eCost').textContent  = won(cost);
+  $('#ePrice').textContent = won(n * S.money.unit);
+  $('#runBtn').disabled = n === 0 || !S.key;
+  $('#runHint').textContent = !S.key ? 'API 키를 먼저 설정해주세요.'
+    : n === 0 ? '상품 사진을 올리면 시작할 수 있습니다.'
+    : `${S.products.length}개 상품 × ${S.sel.cuts.length}컷 = ${n}컷 · 예상 소요 ${Math.ceil(n*9/CFG.concurrency/60)}분 내외`;
+}
+function updateBatchEstimate(){
+  const n = S.bProducts.length * S.bSel.cuts.length;
+  const tier = $('#bTier').value;
+  $('#bCuts').textContent  = n + '컷';
+  $('#bCost').textContent  = won(n * costPerCut(tier));
+  $('#bPrice').textContent = won(n * S.money.unit);
+  $('#bRun').disabled = n === 0 || !S.key;
+}
+
+/* ---------------------------------------------------------------- run: studio */
+async function runStudio(){
+  const cat = $('#category').value, tier = $('#tier').value, styling = $('#styling').value;
+  const mid = $('#modelSel').value;
+  const model = S.models.find(m => m.id === mid);
+  const spec = { gender:$('#mGender').value, age:$('#mAge').value, body:$('#mBody').value, hair:$('#mHair').value, skin:'light', mood:'clean' };
+
+  const jobs = [];
+  for(const p of S.products) for(const cut of S.sel.cuts)
+    jobs.push({ product:p, cut, cat, tier, styling, model, spec, ratio:S.sel.ratio });
+
+  $('#runBtn').disabled = true;
+  $('#results').scrollIntoView({ behavior:'smooth', block:'start' });
+  await runJobs(jobs, S.results, renderResults);
+  $('#runBtn').disabled = false;
+  updateEstimate(); renderGoal();
+  toast('생성 완료');
+}
+
+async function execJob(j, slot){
+  try{
+    const images = j.model ? [{ mime:j.model.mime, b64:j.model.b64 }, { mime:j.product.mime, b64:j.product.b64 }]
+                           : [{ mime:j.product.mime, b64:j.product.b64 }];
+    const prompt = buildPrompt({ cat:j.cat, cut:j.cut, scene:(j.scene || S.sel.scene), styling:j.styling,
+                                 modelRef:!!j.model, modelSpec:j.spec, ratio:j.ratio });
+    const out = await genImage({ prompt, images, ratio:j.ratio, tier:j.tier });
+    slot.status='ok'; slot.b64=out.b64; slot.mime=out.mime; slot.err=null;
+    slot.url = 'data:' + out.mime + ';base64,' + out.b64;
+    logDay({ cuts:1, ok:1, cost:costPerCut(j.tier), rev:S.money.unit });
+  }catch(e){
+    slot.status='err'; slot.err = e.message || '실패';
+    logDay({ cuts:1, fail:1, cost:costPerCut(j.tier)*0.5 });
+  }
+}
+
+async function runJobs(jobs, store, render, onProgress){
+  jobs.forEach(j => { j.rid = uid(); store.push({ id:j.rid, status:'pending', label:CUTS[j.cut].ko, product:j.product.name, ratio:j.ratio, tier:j.tier, job:j }); });
+  render();
+  let done = 0;
+  const queue = jobs.slice();
+  const worker = async () => {
+    while(queue.length){
+      const j = queue.shift();
+      const slot = store.find(r => r.id === j.rid);
+      await execJob(j, slot);
+      done++; render(); renderGoal(); onProgress && onProgress(done, jobs.length);
+    }
+  };
+  await Promise.all(Array.from({length:Math.min(CFG.concurrency, jobs.length)}, worker));
+}
+
+function shotHTML(r){
+  const body = r.status==='pending' ? '<div class="spin"></div>'
+    : r.status==='err' ? `<div style="padding:22px 14px;font-size:11.5px;color:var(--bad);text-align:center">${r.err}</div>`
+    : `<img src="${r.url}" alt="" onclick="zoom(this.src)">`;
+  const badge = r.status==='pending' ? '<span class="badge pend">생성 중</span>'
+    : r.status==='err' ? '<span class="badge err">실패</span>' : '<span class="badge ok">완료</span>';
+  return `<div class="shot"><div class="imgwrap">${body}</div>
+    <div class="meta">${badge}<b>${r.label}</b><span class="pname" title="${r.product}">${r.product}</span><span style="margin-left:auto">${r.ratio}</span></div>
+    <div class="acts">
+      ${r.status==='ok' ? `<button class="btn sm" onclick="dl('${r.id}')">저장</button>` : ''}
+      <button class="btn sm ghost" onclick="again('${r.id}')">재생성</button>
+    </div></div>`;
+}
+function renderResults(){
+  $('#results').innerHTML = S.results.map(shotHTML).join('');
+  $('#resEmpty').style.display = S.results.length ? 'none' : 'block';
+  $('#resCount').textContent = S.results.filter(r=>r.status==='ok').length + '컷';
+}
+function renderBResults(){
+  $('#bResults').innerHTML = S.bResults.map(shotHTML).join('');
+  $('#bEmpty').style.display = S.bResults.length ? 'none' : 'block';
+  $('#bResCount').textContent = S.bResults.filter(r=>r.status==='ok').length + '컷';
+}
+function zoom(src){ $('#lightImg').src = src; $('#lightbox').classList.add('on'); }
+function dl(id){
+  const r = [...S.results, ...S.bResults].find(x=>x.id===id); if(!r) return;
+  const a = document.createElement('a');
+  a.href = r.url; a.download = `${r.product}_${r.label}_${r.ratio.replace(':','x')}.jpg`; a.click();
+}
+async function again(id){
+  const inStudio = S.results.some(r => r.id === id);
+  const store = inStudio ? S.results : S.bResults;
+  const render = inStudio ? renderResults : renderBResults;
+  const slot = store.find(r => r.id === id);
+  if(!slot || !slot.job) return toast('이 컷은 재생성 정보를 찾을 수 없습니다');
+  slot.status = 'pending'; slot.url = null; render();
+  await execJob(slot.job, slot);
+  render(); renderGoal();
+  toast(slot.status === 'ok' ? '재생성 완료' : '재생성 실패: ' + slot.err);
+}
+function clearResults(){ S.results = []; renderResults(); }
+
+/* ---------------------------------------------------------------- run: batch */
+async function runBatch(){
+  const tier = $('#bTier').value;
+  const model = S.models.find(m => m.id === $('#bModelSel').value);
+  const cat = $('#category').value;
+  const jobs = [];
+  for(const p of S.bProducts) for(const cut of S.bSel.cuts)
+    jobs.push({ product:p, cut, cat, tier, styling:'', model, scene:S.bSel.scene,
+                spec:{gender:'f',age:'e20',body:'tall',hair:'longs',skin:'light',mood:'clean'}, ratio:S.bSel.ratio });
+
+  $('#bRun').disabled = true;
+  await runJobs(jobs, S.bResults, renderBResults, (d,t) => {
+    $('#bProg').style.width = (d/t*100) + '%';
+    $('#bStatus').textContent = `${d} / ${t} 완료`;
+  });
+  $('#bRun').disabled = false;
+  $('#bStatus').textContent = `완료 — 성공 ${S.bResults.filter(r=>r.status==='ok').length} · 실패 ${S.bResults.filter(r=>r.status==='err').length}`;
+  toast('배치 완료');
+}
+async function retryFailed(){
+  const failed = S.bResults.filter(r => r.status === 'err' && r.job);
+  if(!failed.length) return toast('재시도할 실패 항목이 없습니다');
+  failed.forEach(r => { r.status = 'pending'; r.url = null; });
+  renderBResults();
+  let done = 0;
+  const q = failed.slice();
+  const worker = async () => {
+    while(q.length){
+      const slot = q.shift();
+      await execJob(slot.job, slot);
+      done++; renderBResults(); renderGoal();
+      $('#bProg').style.width = (done / failed.length * 100) + '%';
+      $('#bStatus').textContent = `재시도 ${done} / ${failed.length}`;
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CFG.concurrency, failed.length) }, worker));
+  toast('재시도 완료');
+}
+
+/* ---------------------------------------------------------------- models */
+async function createModel(){
+  if(!S.key) return openKey();
+  const name = $('#nmName').value.trim() || '이름 없는 모델';
+  const spec = { gender:$('#nmGender').value, age:$('#nmAge').value, body:$('#nmBody').value,
+                 hair:$('#nmHair').value, skin:$('#nmSkin').value, mood:$('#nmMood').value };
+  const extra = $('#nmExtra').value.trim();
+  const prompt = [
+    'ROLE: Commercial casting photographer producing a model reference sheet for a fashion brand.',
+    'TASK: Generate a photorealistic full-body studio reference photograph of ' + modelClause(spec) + '.',
+    extra ? 'ADDITIONAL FEATURES: ' + extra + '.' : '',
+    'WARDROBE: plain fitted neutral grey t-shirt and plain black leggings (so the face and body proportions read clearly).',
+    'SETTING: light neutral grey seamless studio background, soft even diffused lighting, subtle contact shadow.',
+    'POSE: standing straight, facing camera, arms relaxed at sides, neutral calm expression, eyes to camera.',
+    'TECHNICAL: 85mm lens, f/4, sharp focus on the face, natural skin texture, true color.',
+    'OUTPUT: a single clean 3:4 photograph, no text, no watermark, no border, one person only.',
+    'This image will be used as a permanent identity reference, so the face must be clear, well-lit and unobstructed.'
+  ].filter(Boolean).join('\n');
+
+  toast('모델 생성 중...');
+  try{
+    const out = await genImage({ prompt, images:[], ratio:'3:4', tier:'pro' });
+    const m = { id:uid(), name, spec, b64:out.b64, mime:out.mime, createdAt:Date.now() };
+    await dbPut(m); S.models.push(m);
+    logDay({ cuts:1, ok:1, cost:costPerCut('pro'), rev:0 });
+    renderModels(); renderGoal();
+    toast('전속 모델이 저장되었습니다');
+  }catch(e){ toast('실패: ' + e.message); }
+}
+
+function renderModels(){
+  $('#modelGrid').innerHTML = S.models.map(m => `
+    <div class="mcard" onclick="pickModel('${m.id}')">
+      <img src="data:${m.mime};base64,${m.b64}" alt="">
+      <div class="b"><div class="n">${m.name}</div>
+        <div class="d">${MSPEC.gender[m.spec.gender][0]} · ${MSPEC.age[m.spec.age][0]} · ${MSPEC.mood[m.spec.mood][0]}</div>
+        <button class="btn sm ghost" style="margin-top:8px;width:100%" onclick="event.stopPropagation();delModel('${m.id}')">삭제</button>
+      </div></div>`).join('');
+  $('#mEmpty').style.display = S.models.length ? 'none' : 'block';
+  $('#mCount').textContent = S.models.length + '명';
+  const opts = '<option value="">— 선택 안 함 —</option>' + S.models.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  $('#modelSel').innerHTML = opts; $('#bModelSel').innerHTML = opts;
+}
+function pickModel(id){ $('#modelSel').value = id; $('#adhocModel').style.display='none'; toast('스튜디오 모델로 지정했습니다'); }
+async function delModel(id){ await dbDel(id); S.models = S.models.filter(m=>m.id!==id); renderModels(); }
+
+/* ---------------------------------------------------------------- money */
+function logDay(d){
+  const k = today();
+  const e = S.log[k] || { cuts:0, ok:0, fail:0, cost:0, rev:0 };
+  e.cuts += d.cuts||0; e.ok += d.ok||0; e.fail += d.fail||0; e.cost += d.cost||0; e.rev += d.rev||0;
+  S.log[k] = e; localStorage.setItem('le_log', JSON.stringify(S.log));
+}
+function renderGoal(){
+  const e = S.log[today()] || { rev:0 };
+  const v = e.actual || e.rev || 0;
+  const pct = Math.min(100, S.money.goal ? v / S.money.goal * 100 : 0);
+  $('#goalFill').style.width = pct + '%';
+  $('#goalNow').textContent = won(v);
+  $('#goalTgt').textContent = won(S.money.goal);
+}
+function saveMoney(){
+  S.money.goal = +$('#goalInput').value || 100000;
+  S.money.unit = +$('#unitPrice').value || 6000;
+  S.money.fx   = +$('#fx').value || 1380;
+  localStorage.setItem('le_money', JSON.stringify(S.money));
+  $('#goalChips').innerHTML = GOALS.map(g=>`<button class="chip${S.money.goal===g?' on':''}" data-g="${g}">${g/10000}만원</button>`).join('');
+  renderGoal(); renderMoney(); updateEstimate(); updateBatchEstimate(); toast('저장했습니다');
+}
+function saveActual(){
+  const v = +$('#actualIn').value || 0;
+  const k = today();
+  const e = S.log[k] || { cuts:0, ok:0, fail:0, cost:0, rev:0 };
+  e.actual = v; S.log[k] = e;
+  localStorage.setItem('le_log', JSON.stringify(S.log));
+  renderMoney(); renderGoal(); toast('실매출을 기록했습니다');
+}
+
+function renderMoney(){
+  const e = S.log[today()] || { cuts:0, ok:0, fail:0, cost:0, rev:0 };
+  $('#actualIn').value = e.actual || '';
+  $('#kActual').textContent = e.actual ? won(e.actual) : '—';
+  $('#kActualSub').textContent = e.actual
+    ? '목표 대비 ' + Math.round(S.money.goal ? e.actual/S.money.goal*100 : 0) + '%'
+    : '실제 입금 기준';
+  $('#kRev').textContent = won(e.rev);
+  $('#kRevSub').textContent = '목표 대비 ' + Math.round(S.money.goal ? e.rev/S.money.goal*100 : 0) + '%';
+  $('#kCuts').textContent = e.cuts;
+  $('#kCutsSub').textContent = `성공 ${e.ok} · 실패 ${e.fail}`;
+  $('#kCost').textContent = won(e.cost);
+  $('#kCostSub').textContent = '컷당 평균 ' + won(e.cuts ? e.cost/e.cuts : 0);
+  const base = e.actual || e.rev;
+  $('#kMargin').textContent = base ? Math.round((base-e.cost)/base*100) + '%' : '—';
+
+  const tier = $('#tier').value || 'std', cpc = costPerCut(tier);
+  const need = Math.ceil(S.money.goal / Math.max(1, S.money.unit));
+  $('#reverse').innerHTML = `
+    목표 <b style="color:var(--ink)">${won(S.money.goal)}</b> 기준<br>
+    · 컷당 ${won(S.money.unit)} → 하루 <b style="color:var(--accent-lit)">${need}컷</b> 납품<br>
+    · 5컷 패키지(${won(S.money.unit*5)}) → 하루 <b style="color:var(--accent-lit)">${Math.ceil(need/5)}건</b><br>
+    · 월 구독 ${won(79000)} → <b style="color:var(--accent-lit)">${Math.ceil(S.money.goal*30/79000)}명</b> 유지<br>
+    · 예상 원가 ${won(need*cpc)} / 순이익 ${won(S.money.goal - need*cpc)}`;
+
+  const rows = [
+    ['크몽 · 단품',        '착용컷 1컷',           9000,   1],
+    ['크몽 · 기본 패키지', '정면/측면/디테일 3컷', 24000,  3],
+    ['크몽 · 인기 패키지', '5컷 + 규격 2종',       44000,  7],
+    ['크몽 · 대량',        '10컷 세트',            87000,  10],
+    ['직거래 · 상품 단위', '상품 1개당 5컷',       50000,  5],
+    ['월 구독 · 라이트',   '월 30컷 + 전속모델 1', 29000,  30],
+    ['월 구독 · 스탠다드', '월 100컷 + 전속모델 3', 79000, 100],
+    ['월 구독 · 비즈니스', '월 300컷 + 무제한 모델', 199000, 300]
+  ];
+  $('#priceTable tbody').innerHTML = rows.map(([ch,desc,price,cuts]) => {
+    const c = cuts * cpc, m = Math.round((price-c)/price*100);
+    return `<tr><td><b>${ch}</b></td><td style="color:var(--ink-dim)">${desc}</td>
+      <td class="num">${won(price)}</td><td class="num" style="color:var(--ink-dim)">${won(c)}</td>
+      <td class="num" style="color:var(--good)">${m}%</td></tr>`;
+  }).join('');
+
+  const days = Object.entries(S.log).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
+  $('#logTable tbody').innerHTML = days.length ? days.map(([d,v]) =>
+    `<tr><td>${d}</td><td class="num">${v.cuts}</td><td class="num">${won(v.cost)}</td>
+     <td class="num" style="color:var(--ink-dim)">${won(v.rev)}</td>
+     <td class="num">${v.actual ? won(v.actual) : '—'}</td>
+     <td class="num">${Math.round(S.money.goal ? (v.actual||v.rev)/S.money.goal*100 : 0)}%</td></tr>`).join('')
+    : '<tr><td colspan="6" style="color:var(--ink-dim)">아직 기록이 없습니다.</td></tr>';
+}
+
+/* ---------------------------------------------------------------- export */
+async function downloadAllZip(which){
+  const list = (which==='batch' ? S.bResults : S.results).filter(r=>r.status==='ok');
+  if(!list.length) return toast('다운로드할 결과가 없습니다');
+  const client = ($('#bClient').value || '납품').trim();
+  if(typeof JSZip === 'undefined'){
+    toast('ZIP 모듈을 불러오지 못해 개별 저장합니다 (' + list.length + '장)');
+    for(let i=0;i<list.length;i++){
+      const r = list[i];
+      const a = document.createElement('a');
+      a.href = r.url;
+      a.download = `${String(i+1).padStart(2,'0')}_${r.product}_${r.label}_${r.ratio.replace(':','x')}.jpg`;
+      a.click();
+      await new Promise(res => setTimeout(res, 320));
+    }
+    return;
+  }
+  const zip = new JSZip();
+  list.forEach((r,i) => {
+    const folder = which==='batch' ? `${client}/${r.product}` : '착용컷';
+    zip.file(`${folder}/${String(i+1).padStart(2,'0')}_${r.label}_${r.ratio.replace(':','x')}.jpg`, r.b64, { base64:true });
+  });
+  if(which==='batch') zip.file(`${client}/납품명세.txt`, quoteText());
+  const blob = await zip.generateAsync({ type:'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${which==='batch'?client:'lookbook'}_${today()}.zip`; a.click();
+  toast('ZIP 생성 완료');
+}
+function quoteText(){
+  const list = S.bResults.filter(r=>r.status==='ok');
+  const byP = {}; list.forEach(r => (byP[r.product] = (byP[r.product]||0)+1));
+  const total = list.length * S.money.unit;
+  return [
+    '납품 명세서 / 견적서',
+    '발행일: ' + today(),
+    '고객사: ' + ($('#bClient').value || '-'),
+    '',
+    '상품별 납품 컷수',
+    ...Object.entries(byP).map(([k,v]) => `  · ${k} — ${v}컷`),
+    '',
+    `총 납품 컷수: ${list.length}컷`,
+    `컷당 단가: ${won(S.money.unit)}`,
+    `공급가액: ${won(total)}`,
+    `부가세(10%): ${won(total*0.1)}`,
+    `합계: ${won(total*1.1)}`,
+    '',
+    '※ 본 결과물은 생성형 AI로 제작된 이미지입니다.',
+    '※ 상업적 사용권은 납품과 동시에 고객사에 귀속됩니다.',
+    '※ 수정 요청은 납품일로부터 7일 이내 2회까지 무상입니다.'
+  ].join('\n');
+}
+function buildQuote(){
+  const t = quoteText();
+  navigator.clipboard?.writeText(t).then(()=>toast('견적서를 클립보드에 복사했습니다'), ()=>{});
+  const blob = new Blob([t], { type:'text/plain;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `견적서_${today()}.txt`; a.click();
+}
+
+/* ---------------------------------------------------------------- key */
+function openKey(){ $('#keyModal').classList.add('on'); }
+function closeKey(){ $('#keyModal').classList.remove('on'); }
+function saveKey(){
+  S.key = $('#apiKey').value.trim();
+  localStorage.setItem('le_key', S.key);
+  renderKeyDot(); updateEstimate(); updateBatchEstimate(); closeKey();
+  toast(S.key ? 'API 키를 저장했습니다' : '키를 비웠습니다');
+}
+function renderKeyDot(){ $('#keyDot').classList.toggle('on', !!S.key); }
+
+/* ---------------------------------------------------------------- playbook */
+function renderPlaybook(){
+  $('#playbook').innerHTML = `
+<h2>결론부터 — 이 능력으로 돈이 되는 순서</h2>
+<p>AI를 "할 줄 안다"는 것만으로는 돈이 되지 않습니다. 돈은 <b>이미 돈을 쓰고 있는 사람의 지출을 대체</b>할 때 생깁니다.
+온라인 셀러는 지금도 상품 촬영에 <b>건당 수십만 원</b>을 씁니다. 모델 섭외비, 스튜디오 대관, 보정비, 일정 조율.
+그 지출을 그대로 가져오는 것이 가장 짧은 길입니다.</p>
+<div class="note"><b>핵심 경제성.</b> 착용컷 1컷의 실제 API 원가는 약 <b>100~200원</b>입니다.
+시장 거래가는 컷당 <b>6,000~9,000원</b>, 패키지 기준 <b>18,000~87,000원</b>입니다.
+즉 원가율 2~3%, 마진율 97% 구조입니다. 이 격차가 당신이 가져갈 몫입니다.</div>
+
+<h2>수익 사다리 — 3단계</h2>
+<h3>1단 · 외주 (D+0~14) — "오늘 당장 현금"</h3>
+<p>크몽·숨고에 서비스를 올려 건당으로 판매합니다. 재고도, 선투자도, 서버비도 없습니다.</p>
+<ul>
+<li><b>목표</b>: 하루 10만 원 = 5컷 패키지 2~3건</li>
+<li><b>준비물</b>: 이 툴 + 포트폴리오 20컷 (카테고리별 4컷 × 5종) + 상세페이지</li>
+<li><b>가격</b>: 9,000 / 24,000 / 44,000원 3단 구성 — 중간가 유도가 전환율이 가장 높습니다</li>
+<li><b>차별점 문구</b>: "24시간 납품", "전속 모델 얼굴 고정", "스마트스토어 규격 그대로"</li>
+</ul>
+<div class="note warn">첫 5건은 <b>원가에 가깝게</b> 받으십시오. 리뷰 5개가 쌓이기 전까지 노출이 거의 없습니다.
+리뷰는 단가가 아니라 <b>재고</b>입니다. 리뷰 10개 이후 가격을 2배로 올리는 것이 정석입니다.</div>
+
+<h3>2단 · 직거래 반복 (D+14~60) — "같은 고객이 매달"</h3>
+<p>외주는 매번 영업해야 합니다. 반복 매출로 바꾸는 장치가 <b>전속 모델</b>입니다.</p>
+<ul>
+<li>고객 브랜드 전용 모델을 1명 만들어 드리고, 그 얼굴을 고정해 모든 상품을 촬영합니다</li>
+<li>고객은 모델을 바꾸면 기존 상세페이지와 톤이 깨집니다 — 그래서 옮기지 못합니다</li>
+<li><b>제안 방식</b>: "첫 모델 제작 무료, 이후 상품당 5만 원" 또는 "월 79,000원에 100컷"</li>
+<li>신상품이 매주 나오는 셀러(의류·잡화)가 최적 타깃입니다</li>
+</ul>
+
+<h3>3단 · 구독 · 자동화 (D+60~) — "자는 동안"</h3>
+<ul>
+<li><b>월 구독</b> 29,000 / 79,000 / 199,000원 — 100명 × 79,000원 = 월 790만 원 (하루 약 26만 원)</li>
+<li><b>하루 100만 원</b>은 외주로는 사실상 불가능합니다. 구독 380명 또는 구독 + 외주 + 디지털 상품의 합산으로 도달합니다</li>
+<li>결제는 초기에 <b>계좌이체·토스 링크 + 수동 발급</b>으로 충분합니다. 결제 시스템부터 만들지 마십시오</li>
+</ul>
+
+<h2>자는 동안 들어오는 수익 라인 (재고 0, 한계비용 0)</h2>
+<ul>
+<li><b>프롬프트 팩 / 전자책</b> — 이 툴에 들어간 프롬프트 엔진 자체가 상품입니다. 크몽 전자책 1.9만/4.9만/8.9만 3단 구성.
+단, 크몽은 수익 주장에 <b>증빙 자료 등록</b>을 요구합니다. 실제 납품 내역이 쌓인 뒤 출시하십시오</li>
+<li><b>템플릿 번들</b> — 카테고리별 프롬프트 + 규격 프리셋 + 납품 양식 세트</li>
+<li><b>해외 동시 판매</b> — Fiverr의 동일 카테고리는 $15~100 구간입니다. 같은 결과물을 환율 프리미엄으로 재판매할 수 있습니다</li>
+<li><b>화이트라벨</b> — 이 툴을 셀러 교육업체·쇼핑몰 솔루션사에 월정액으로 공급</li>
+</ul>
+
+<h2>실제 단가표 (원가·마진 자동 계산은 '수익 관리' 탭)</h2>
+<p>시장 조사 기준 실제 거래 가격대입니다. 자신의 포지션을 먼저 정하십시오.</p>
+<ul>
+<li>컷 단위 저가형: 3컷 18,000원 (컷당 6,000원)</li>
+<li>의류 쇼핑몰형: 9,000 / 15,000 / 22,000원</li>
+<li>착용샷 묶음: 1장 9,000 · 5장 44,000 · 10장 87,000원</li>
+<li>제품+모델 연출형: 39,000 / 59,000 / 89,000원 (정가 10만~30만 원대)</li>
+<li>플랫폼 수수료: 크몽 결제 시 약 4.5%(VAT 포함) 별도</li>
+</ul>
+
+<h2>영업 — 먼저 연락하는 쪽이 가져갑니다</h2>
+<h3>타깃 찾는 법</h3>
+<p>스마트스토어에서 <b>상품 사진이 누끼뿐인 의류 셀러</b>를 찾습니다. 착용컷이 없다는 건 촬영 예산이 없다는 뜻이고,
+그래서 전환율이 낮고, 그래서 당신의 제안이 즉시 이해됩니다.</p>
+<h3>DM 템플릿</h3>
+<p style="background:var(--surface-2);padding:14px;border-radius:10px;white-space:pre-line;font-size:12.5px">안녕하세요, [브랜드명] 담당자님.
+[상품명] 상세페이지를 보고 연락드립니다.
+
+사장님 상품 사진 1장으로 모델 착용컷을 만들어 봤습니다. 아래가 결과물입니다.
+(이미지 3장 첨부)
+
+모델 섭외·스튜디오 없이 24시간 안에 나오고, 브랜드 전속 모델을 정하면 모든 상품에 같은 얼굴이 유지됩니다.
+
+마음에 드시면 상품 3개까지 무료로 더 만들어 드리겠습니다. 쓰실지는 보고 결정하셔도 됩니다.</p>
+<div class="note"><b>무료 샘플을 먼저 만들어서 보내는 것</b>이 이 사업의 유일한 영업 기술입니다.
+말로 설명하면 0%, 결과물을 보여주면 상당수가 답장합니다. 하루 20곳에 보내면 영업이 끝납니다.</div>
+
+<h2>운영 · 품질 기준</h2>
+<ul>
+<li><b>납품 전 반드시 사람이 검수</b>합니다. 손가락, 상품 색상, 로고 왜곡 3가지만 보면 됩니다</li>
+<li>메인컷은 <b>고급(Pro)</b>, 서브컷은 <b>표준</b>으로 섞으면 원가를 절반으로 줄이면서 품질 인상은 유지됩니다</li>
+<li>실패·재생성을 감안해 원가는 실제의 <b>1.6배</b>로 잡아두었습니다 (이 툴의 기본값)</li>
+<li>파일명 규칙과 폴더 구조를 지키면 "일 잘한다"는 인상이 단가를 올립니다 — ZIP 납품에 자동 적용됩니다</li>
+</ul>
+
+<h2>법적 · 윤리 체크리스트</h2>
+<ul>
+<li><b>AI 기본법</b>(2026. 1. 22. 시행) 제31조에 따라 생성형 AI 사업자에게 AI 생성물 표시 의무가 있습니다.
+의무 주체는 주로 AI 서비스 제공자이며, 생성물을 단순히 게시하는 개인·마케터에 대한 적용 범위는 해석이 갈립니다.
+<b>구독 서비스 형태로 툴을 제공하게 되면 본인이 의무 주체가 될 수 있으므로</b>, 그 시점에 과기정통부 가이드라인과 시행령 원문을 직접 확인하십시오</li>
+<li>실존 인물과 혼동될 수 있는 합성물(딥페이크)은 명확한 표시가 요구됩니다. <b>실제 연예인·인플루언서 얼굴은 절대 사용하지 마십시오</b></li>
+<li>납품 시 "AI 생성 이미지"임을 명세서에 기재하는 것이 분쟁 예방에 유리합니다 — 이 툴의 납품명세에 기본 포함되어 있습니다</li>
+<li>상품의 색상·소재가 실물과 다르게 나오면 <b>표시광고법상 과장광고</b> 리스크가 고객에게 발생합니다. 색상 재현을 최우선으로 두십시오</li>
+</ul>
+
+<h2>이 툴을 그대로 쓰는 법</h2>
+<ol>
+<li><b>API 키</b> 를 넣습니다 (Google AI Studio에서 발급)</li>
+<li><b>전속 모델</b> 탭에서 모델 2~3명을 만듭니다 — 포트폴리오의 얼굴이 됩니다</li>
+<li><b>스튜디오</b>에서 본인이 구한 상품 사진으로 포트폴리오 20컷을 만듭니다</li>
+<li>크몽에 등록하고, 동시에 DM 영업을 시작합니다</li>
+<li>주문이 오면 <b>배치 납품</b> 탭에서 한 번에 처리하고 ZIP + 견적서를 보냅니다</li>
+<li><b>수익 관리</b> 탭에서 목표 대비 진행을 매일 확인합니다</li>
+</ol>
+<div class="note"><b>이 앱은 서버가 없습니다.</b> 모든 처리가 브라우저에서 일어나고, API 키와 모델·기록은 이 브라우저에만 저장됩니다.
+그래서 고정비가 0원이고, GitHub Pages 같은 정적 호스팅에 그대로 올려 어디서나 쓸 수 있습니다.</div>
+`;
+}
+
+/* ---------------------------------------------------------------- boot */
+(async function boot(){
+  await openDB();
+  S.models = await dbAll();
+  initUI();
+  renderModels();
+  renderResults(); renderBResults(); renderMoney();
+  if(!S.key) setTimeout(openKey, 600);
+})();
+</script>
+</body>
+</html>
