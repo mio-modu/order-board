@@ -171,6 +171,9 @@ tr:last-child td{border-bottom:none}
   <nav class="tabs">
     <button class="on" data-tab="scan">일괄 스캔</button>
     <button data-tab="leads">영업 대상</button>
+    <button data-tab="map">공략 지도</button>
+    <button data-tab="track">추적 · 전후 비교</button>
+    <button data-tab="tech">기술 진단</button>
     <button data-tab="report">진단 리포트</button>
     <button data-tab="sales">영업 자료</button>
     <button data-tab="guide">운영 가이드</button>
@@ -206,6 +209,9 @@ tr:last-child td{border-bottom:none}
       <div class="card">
         <h3><span class="num">3</span> 실행</h3>
         <div class="field"><label class="f">엔진</label><select id="engine"></select></div>
+        <div class="field"><label class="f">측정 언어</label><select id="lang"></select>
+          <div class="hint" style="margin-top:6px">언어마다 <b>AI가 웹을 검색하는 비율이 다릅니다.</b>
+          검색을 타지 않는 언어는 콘텐츠를 고쳐도 즉시 반영되지 않습니다. 이 차이가 제안 범위를 가릅니다.</div></div>
         <div class="field"><label class="f">검색 연동</label>
           <div class="chips" id="groundChips"></div>
           <div class="hint" style="margin-top:6px">검색을 켜면 AI가 웹을 참조한 답변을, 끄면 학습된 지식만으로 답한 결과를 봅니다. <b>둘은 결과가 다릅니다</b> — 개입 방법도 달라집니다.</div></div>
@@ -247,6 +253,91 @@ tr:last-child td{border-bottom:none}
     <div class="hint" style="margin-top:14px">
       <b>영업 온도</b>는 "이 회사가 돈을 쓸 이유가 얼마나 명확한가"입니다.
       경쟁사 노출률이 높을수록, 본인 노출률이 낮을수록 뜨겁습니다. 노출률이 둘 다 낮으면 시장 자체가 아직 AI에 안 잡힌 것이라 설득이 어렵습니다.
+    </div>
+  </div>
+</section>
+
+<!-- ================= 공략 지도 ================= -->
+<section class="panel" id="p-map">
+  <div class="kpis" id="mapKpis"></div>
+  <div class="card">
+    <h3>질문별 공략 난이도 — 인용 출처가 적을수록 비어 있는 자리</h3>
+    <table id="mapTable"><thead><tr>
+      <th class="num">인용출처</th><th>질문</th><th>AI 응답 방식</th><th>현재 출처</th><th>내 브랜드</th>
+    </tr></thead><tbody></tbody></table>
+    <div class="hint" style="margin-top:14px">
+      <b>인용출처 0~2개</b>인 질문은 아직 아무도 제대로 답을 쓰지 않은 자리입니다. 가장 먼저 공략합니다.<br>
+      <b>학습지식</b>으로 표시된 질문은 AI가 웹을 검색하지 않고 답한 것입니다.
+      콘텐츠를 새로 써도 즉시 반영되지 않으므로, 고객에게 기간을 약속하면 안 됩니다.
+    </div>
+  </div>
+</section>
+
+<!-- ================= 추적 · 전후 비교 ================= -->
+<section class="panel" id="p-track">
+  <div class="cols">
+    <div class="sticky">
+      <div class="card">
+        <h3>기준선 저장</h3>
+        <div class="field"><label class="f">스냅샷 이름</label>
+          <input type="text" id="snapName" placeholder="예: 무드앤드 2026-10 기준선"></div>
+        <button class="btn primary full" onclick="saveSnap()">현재 스캔을 기준선으로 저장</button>
+        <div class="hint" style="margin-top:8px">
+          질문 세트·언어·엔진이 함께 저장됩니다. <b>같은 조건으로 재측정해야 비교가 성립합니다.</b>
+          질문을 한 글자라도 바꾸면 비교가 깨집니다.
+        </div>
+      </div>
+      <div class="card"><div class="note good">
+        <b>이 탭이 이 사업의 핵심입니다.</b><br>
+        GEO 업계 최대 약점은 효과 증명이 안 된다는 것입니다.
+        같은 질문으로 4주 뒤 다시 재서 <b>전후 숫자</b>를 보여줄 수 있으면, 그게 유일한 반박 불가능한 증거입니다.
+        고객 GA4의 <b>AI Assistant 채널 세션수</b>를 함께 기록하면 완성됩니다.
+      </div></div>
+    </div>
+    <div>
+      <div class="resbar"><h2>저장된 기준선</h2><span class="badge" id="snapCount">0개</span></div>
+      <div class="card" style="margin-bottom:var(--s4)">
+        <div class="row">
+          <div><label class="f">이전</label><select id="snapA"></select></div>
+          <div><label class="f">이후</label><select id="snapB"></select></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end">
+            <button class="btn" onclick="compareSnaps()">비교</button></div>
+        </div>
+      </div>
+      <div id="compareOut"></div>
+      <div class="card"><h3>기준선 목록</h3>
+        <table id="snapTable"><thead><tr><th>이름</th><th>측정일</th><th>언어</th><th class="num">질문</th><th class="num">검색발동</th><th class="num">평균출처</th><th></th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 기술 진단 ================= -->
+<section class="panel" id="p-tech">
+  <div class="cols">
+    <div class="sticky">
+      <div class="card">
+        <h3>사이트 기술 점검</h3>
+        <div class="field"><label class="f">도메인</label>
+          <input type="text" id="techDomain" placeholder="example.com"></div>
+        <div class="field"><label class="f">대표 콘텐츠 페이지 URL (선택)</label>
+          <input type="text" id="techPage" placeholder="https://example.com/guides/..."></div>
+        <button class="btn primary full" onclick="runTech()">점검 실행</button>
+        <div class="hint" style="margin-top:8px">
+          robots.txt · llms.txt · sitemap.xml · 구조화 데이터(JSON-LD)를 확인합니다.
+        </div>
+      </div>
+      <div class="card">
+        <h3>HTML 직접 붙여넣기</h3>
+        <div class="field"><textarea id="techHtml" rows="5" placeholder="CORS로 막힌 사이트는 페이지 소스를 여기에 붙여넣으세요"></textarea></div>
+        <button class="btn full" onclick="auditPasted()">붙여넣은 HTML 점검</button>
+        <div class="hint" style="margin-top:8px">브라우저 보안(CORS) 때문에 외부 사이트를 직접 못 읽는 경우가 많습니다.
+          그때는 해당 페이지에서 <b>소스 보기 → 전체 복사</b> 후 붙여넣으세요.</div>
+      </div>
+    </div>
+    <div>
+      <div class="resbar"><h2>점검 결과</h2><span class="badge" id="techScore">—</span></div>
+      <div id="techOut"></div>
+      <div class="empty" id="techEmpty"><div class="em">◻︎</div><div>도메인을 입력하고 점검을 실행하세요.</div></div>
     </div>
   </div>
 </section>
@@ -322,6 +413,22 @@ const ENGINES = {
 };
 const TONES = { fact:{ko:'사실 전달형'}, consult:{ko:'컨설팅 제안형'}, short:{ko:'짧고 직설적'} };
 
+/* 측정 언어. 언어마다 AI의 웹검색 발동률이 크게 다르다 — 실측으로 확인된 사실이다. */
+const LANGS = {
+  ko:      { label:'한국어',            native:'Korean' },
+  en:      { label:'English',           native:'English' },
+  ja:      { label:'日本語',             native:'Japanese' },
+  'pt-br': { label:'Português (BR)',    native:'Brazilian Portuguese' },
+  fil:     { label:'Filipino',          native:'Filipino/Tagalog' },
+  id:      { label:'Bahasa Indonesia',  native:'Bahasa Indonesia' },
+  th:      { label:'ไทย',                native:'Thai' },
+  vi:      { label:'Tiếng Việt',        native:'Vietnamese' },
+  es:      { label:'Español',           native:'Spanish' },
+  'zh-hant':{label:'繁體中文',           native:'Traditional Chinese' },
+  de:      { label:'Deutsch',           native:'German' },
+  fr:      { label:'Français',          native:'French' }
+};
+
 const S = {
   key: localStorage.getItem('av_key') || '',
   questions: [],
@@ -330,7 +437,10 @@ const S = {
   rows: [],        // {q, answer, searched, hits:{brand:{pos,rank}}, sources:[]}
   stats: [],       // per-brand aggregate
   ground: 'off',
-  tone: 'fact'
+  tone: 'fact',
+  lang: 'ko',
+  density: null,
+  snaps: JSON.parse(localStorage.getItem('av_snaps') || '[]')
 };
 
 const $ = s => document.querySelector(s);
@@ -398,16 +508,19 @@ async function genQuestions(){
   const region = $('#region').value.trim();
 
   toast('질문 세트 생성 중...');
-  const prompt = `당신은 한국 시장 조사 전문가입니다.
-"${ind}"${region ? ` (지역: ${region})` : ''} 업종에서, 실제 한국 소비자나 담당자가 ChatGPT·Gemini 같은 AI에게 물어볼 법한 질문 ${n}개를 만드세요.
+  const L = LANGS[S.lang];
+  const prompt = `You are a market research expert.
+Write ${n} search queries in ${L.native}, exactly as a real person would type them into ChatGPT or Gemini
+when they are close to choosing or buying in this market: "${ind}"${region ? ` (region: ${region})` : ''}.
 
-조건:
-- 구매 의도가 있는 질문만. 단순 정보성 질문 제외.
-- 다음 유형을 섞으세요: 추천형("~추천해줘"), 비교형("A와 B 중 뭐가 나아"), 문제해결형("~할 때 어디가 좋아"), 예산형("~만원대 추천"), 상황형("신혼인데 ~").
-- 특정 브랜드명을 질문에 넣지 마세요. 브랜드가 답변에 등장하는지를 보는 것이 목적입니다.
-- 실제 사람이 치는 자연스러운 한국어 말투.
+Rules:
+- Purchase or selection intent only. No purely informational trivia.
+- Mix these types: recommendation ("best ... for ..."), comparison ("A or B"), problem-solving
+  ("what do I do when ..."), budget ("under X"), and situational ("I'm a newlywed and ...").
+- Do NOT put any brand name in the queries. The point is to see which brands the AI names on its own.
+- Natural native phrasing as a local would actually type it, not translated-sounding text.
 
-JSON 배열로만 출력: ["질문1","질문2",...]`;
+Return a JSON array of ${n} strings only: ["query1","query2",...]`;
 
   try{
     const r = await ask(prompt, { json:true });
@@ -487,7 +600,7 @@ async function runScan(){
   await Promise.all(Array.from({ length: Math.min(3, qs.length) }, worker));
 
   aggregate();
-  renderScan(); renderLeads(); fillBrandSelects();
+  renderScan(); renderLeads(); renderMap(); fillBrandSelects();
   $('#runBtn').disabled = false;
   $('#status').textContent = `완료 — ${qs.length}개 질의, ${brands.length}개 기업 측정`;
   toast('스캔 완료');
@@ -524,6 +637,14 @@ function aggregate(){
   const leads = S.stats.filter(x => x.heat === 'hot' || x.heat === 'warm').length;
   $('#hBrands').textContent = S.brands.length;
   $('#hLeads').textContent = leads;
+
+  // 질문별 경쟁 밀도 — 인용 출처(고유 도메인) 수가 곧 그 질문의 혼잡도다
+  S.density = rows.map(r => {
+    const doms = [...new Set((r.sources || []).map(sv => {
+      try { return new URL(sv.uri).hostname.replace(/^www\./,''); } catch { return (sv.title||'').toLowerCase(); }
+    }).filter(Boolean))];
+    return { q:r.q, doms, n:doms.length, searched:!!r.searched, hits:Object.keys(r.hits||{}) };
+  }).sort((a,b) => a.n - b.n || (b.searched - a.searched));
 }
 
 /* ---------------------------------------------------------- 렌더 */
@@ -575,6 +696,120 @@ function renderLeads(){
       <td><button class="btn sm ghost" onclick="pickReport('${esc(x.name)}')">리포트</button></td>
     </tr>`;
   }).join('');
+}
+
+function renderMap(){
+  if(!S.density || !S.density.length){ $('#mapKpis').innerHTML=''; $('#mapTable tbody').innerHTML=''; return; }
+  const d = S.density, n = d.length;
+  const searched = d.filter(x=>x.searched).length;
+  const avg = d.reduce((s,x)=>s+x.n,0)/n;
+  const gaps = d.filter(x=>x.n<=2).length;
+  const openGaps = d.filter(x=>x.n<=2 && x.searched).length;
+
+  $('#mapKpis').innerHTML = `
+    <div class="kpi hero"><div class="k">즉시 공략 질문</div><div class="v">${openGaps}</div>
+      <div class="s">출처 2개 이하 + 검색 발동</div></div>
+    <div class="kpi"><div class="k">검색 발동률</div><div class="v">${Math.round(searched/n*100)}%</div>
+      <div class="s">${searched} / ${n} 질문</div></div>
+    <div class="kpi"><div class="k">평균 인용 출처</div><div class="v">${avg.toFixed(1)}</div>
+      <div class="s">낮을수록 비어 있음</div></div>
+    <div class="kpi"><div class="k">공백 질문</div><div class="v">${gaps}</div>
+      <div class="s">그중 ${gaps-openGaps}개는 검색 미발동</div></div>`;
+
+  $('#mapTable tbody').innerHTML = d.map(x => {
+    const tone = x.n===0 ? 'var(--good)' : x.n<=2 ? 'var(--warn)' : 'var(--ink-dim)';
+    return `<tr>
+      <td class="num" style="color:${tone};font-weight:700">${x.n}</td>
+      <td>${esc(x.q)}</td>
+      <td><span class="pill ${x.searched?'srch':'mem'}">${x.searched?'웹검색':'학습지식'}</span></td>
+      <td style="color:var(--ink-dim);font-size:11.5px">${x.doms.slice(0,4).map(esc).join(', ') || '—'}</td>
+      <td>${x.hits.length ? x.hits.slice(0,3).map(h=>`<span class="pill hit">${esc(h)}</span>`).join(' ') : '<span class="pill miss">없음</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------------------------------------------------- 스냅샷 · 전후 비교 */
+function snapMetrics(){
+  const d = S.density || [], n = d.length || 1;
+  return {
+    questions: d.length,
+    searchRate: d.filter(x=>x.searched).length / n,
+    avgSources: d.reduce((s,x)=>s+x.n,0) / n,
+    brands: S.stats.map(x => ({ name:x.name, exposure:x.exposure, avgRank:x.avgRank, mentions:x.mentions }))
+  };
+}
+function saveSnap(){
+  if(!S.rows.filter(Boolean).length) return toast('먼저 스캔을 실행하세요');
+  const snap = {
+    id: Math.random().toString(36).slice(2,10),
+    name: ($('#snapName').value.trim() || ('기준선 ' + new Date().toISOString().slice(0,10))),
+    date: new Date().toISOString().slice(0,10),
+    lang: S.lang, engine: $('#engine').value, ground: S.ground,
+    questions: S.questions.slice(),
+    m: snapMetrics()
+  };
+  S.snaps.unshift(snap);
+  localStorage.setItem('av_snaps', JSON.stringify(S.snaps.slice(0,40)));
+  renderSnaps(); toast('기준선을 저장했습니다');
+}
+function delSnap(id){
+  S.snaps = S.snaps.filter(x=>x.id!==id);
+  localStorage.setItem('av_snaps', JSON.stringify(S.snaps));
+  renderSnaps();
+}
+function renderSnaps(){
+  $('#snapCount').textContent = S.snaps.length + '개';
+  const opts = S.snaps.map(x=>`<option value="${x.id}">${esc(x.name)} (${x.date})</option>`).join('');
+  $('#snapA').innerHTML = opts; $('#snapB').innerHTML = opts;
+  if(S.snaps.length>1){ $('#snapA').value = S.snaps[1].id; $('#snapB').value = S.snaps[0].id; }
+  $('#snapTable tbody').innerHTML = S.snaps.length ? S.snaps.map(x=>`<tr>
+    <td><b>${esc(x.name)}</b></td><td>${x.date}</td><td>${LANGS[x.lang]?.label || x.lang}</td>
+    <td class="num">${x.m.questions}</td><td class="num">${Math.round(x.m.searchRate*100)}%</td>
+    <td class="num">${x.m.avgSources.toFixed(1)}</td>
+    <td><button class="btn sm ghost" onclick="delSnap('${x.id}')">삭제</button></td></tr>`).join('')
+    : '<tr><td colspan="7" style="color:var(--ink-dim)">저장된 기준선이 없습니다.</td></tr>';
+}
+function compareSnaps(){
+  const a = S.snaps.find(x=>x.id===$('#snapA').value);
+  const b = S.snaps.find(x=>x.id===$('#snapB').value);
+  if(!a || !b) return toast('비교할 기준선 2개를 선택하세요');
+  if(a.id === b.id) return toast('서로 다른 기준선을 선택하세요');
+
+  const sameQ = JSON.stringify(a.questions) === JSON.stringify(b.questions);
+  const arrow = (x,y,unit='',dec=1) => {
+    const d = y - x;
+    const col = Math.abs(d) < 1e-9 ? 'var(--ink-dim)' : d > 0 ? 'var(--good)' : 'var(--bad)';
+    const sign = d > 0 ? '+' : '';
+    return `<span style="color:${col};font-weight:700">${sign}${d.toFixed(dec)}${unit}</span>`;
+  };
+  const names = [...new Set([...a.m.brands.map(x=>x.name), ...b.m.brands.map(x=>x.name)])];
+
+  $('#compareOut').innerHTML = `
+    ${sameQ ? '' : '<div class="note warn" style="margin-bottom:16px"><b>질문 세트가 다릅니다.</b> 비교 결과를 고객에게 제시하면 안 됩니다. 같은 질문으로 재측정하세요.</div>'}
+    <div class="card" style="margin-bottom:16px">
+      <h3>${esc(a.name)} (${a.date}) → ${esc(b.name)} (${b.date})</h3>
+      <div class="kpis" style="margin-bottom:0">
+        <div class="kpi"><div class="k">검색 발동률</div>
+          <div class="v" style="font-size:20px">${Math.round(a.m.searchRate*100)}% → ${Math.round(b.m.searchRate*100)}%</div>
+          <div class="s">${arrow(a.m.searchRate*100, b.m.searchRate*100,'%p',0)}</div></div>
+        <div class="kpi"><div class="k">평균 인용 출처</div>
+          <div class="v" style="font-size:20px">${a.m.avgSources.toFixed(1)} → ${b.m.avgSources.toFixed(1)}</div>
+          <div class="s">${arrow(a.m.avgSources, b.m.avgSources)} (경쟁 밀도)</div></div>
+      </div>
+    </div>
+    <div class="card"><h3>브랜드별 노출률 변화</h3>
+      <table><thead><tr><th>브랜드</th><th class="num">이전</th><th class="num">이후</th><th class="num">변화</th><th class="num">평균순위</th></tr></thead><tbody>
+      ${names.map(nm => {
+        const x = a.m.brands.find(v=>v.name===nm), y = b.m.brands.find(v=>v.name===nm);
+        const xe = x ? x.exposure*100 : 0, ye = y ? y.exposure*100 : 0;
+        return `<tr><td><b>${esc(nm)}</b></td>
+          <td class="num">${x?pct(x.exposure):'—'}</td>
+          <td class="num">${y?pct(y.exposure):'—'}</td>
+          <td class="num">${arrow(xe,ye,'%p',0)}</td>
+          <td class="num">${x?.avgRank?x.avgRank.toFixed(1):'—'} → ${y?.avgRank?y.avgRank.toFixed(1):'—'}</td></tr>`;
+      }).join('')}
+      </tbody></table></div>`;
+  toast('비교 완료');
 }
 
 function fillBrandSelects(){
@@ -758,6 +993,134 @@ ${me} · ${ct}`
 }
 function copyOutreach(){ navigator.clipboard?.writeText($('#outreach').value).then(()=>toast('복사했습니다'),()=>toast('복사 실패')); }
 
+/* ---------------------------------------------------------- 기술 진단 */
+/* 브라우저에서 외부 사이트를 읽는 것은 CORS로 막히는 경우가 많다.
+   실패를 숨기지 않고 그대로 보여주고, HTML 직접 붙여넣기 경로를 함께 제공한다. */
+async function tryFetch(url){
+  try{
+    const res = await fetch(url, { redirect:'follow' });
+    return { ok:res.ok, status:res.status, text: res.ok ? await res.text() : '' };
+  }catch(e){ return { ok:false, blocked:true, status:0, text:'', err:String(e.message||e) }; }
+}
+
+function auditHtml(html){
+  const out = { jsonld:[], dateModified:null, h1:null, title:null, desc:null };
+  const t = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i); if(t) out.title = t[1].trim().slice(0,160);
+  const h = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i); if(h) out.h1 = h[1].replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,160);
+  const d = html.match(/name=["']description["'][^>]*content=["']([^"']*)["']/i); if(d) out.desc = d[1].slice(0,200);
+  const blocks = [...html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)];
+  blocks.forEach(b => {
+    try{
+      const parsed = JSON.parse(b[1].trim());
+      (Array.isArray(parsed) ? parsed : [parsed]).forEach(o => {
+        if(o && typeof o === 'object'){
+          if(o['@type']) out.jsonld.push(Array.isArray(o['@type']) ? o['@type'].join('/') : o['@type']);
+          if(o.dateModified && !out.dateModified) out.dateModified = o.dateModified;
+        }
+      });
+    }catch{ out.jsonld.push('(파싱 실패)'); }
+  });
+  return out;
+}
+
+function techRow(ok, label, detail, weight){
+  const icon = ok===true ? '<span class="pill ok">통과</span>'
+             : ok==='warn' ? '<span class="pill pend">확인 필요</span>'
+             : '<span class="pill err">미흡</span>';
+  return { ok, html:`<tr><td style="white-space:nowrap">${icon}</td><td><b>${label}</b></td>
+    <td style="color:var(--ink-dim)">${detail}</td></tr>`, weight };
+}
+
+async function runTech(){
+  let dom = $('#techDomain').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+  if(!dom) return toast('도메인을 입력하세요');
+  const base = 'https://' + dom;
+  $('#techEmpty').style.display='none';
+  $('#techOut').innerHTML = '<div class="spin" style="width:24px;height:24px;border:2.5px solid var(--line-strong);border-top-color:var(--accent);border-radius:99px;animation:none;margin:32px auto"></div><div class="hint" style="text-align:center">점검 중…</div>';
+
+  const [rb, llms, llmsFull, sm] = await Promise.all([
+    tryFetch(base + '/robots.txt'), tryFetch(base + '/llms.txt'),
+    tryFetch(base + '/llms-full.txt'), tryFetch(base + '/sitemap.xml')
+  ]);
+
+  const rows = [];
+  let blocked = rb.blocked && llms.blocked && sm.blocked;
+
+  if(rb.blocked) rows.push(techRow('warn','robots.txt','브라우저 보안(CORS)으로 직접 읽지 못했습니다. 주소창에서 직접 확인하세요.',2));
+  else if(!rb.ok) rows.push(techRow(false,'robots.txt',`HTTP ${rb.status} — 파일이 없습니다. 크롤러가 사이트맵을 못 찾습니다.`,2));
+  else {
+    const txt = rb.text.toLowerCase();
+    const bots = ['gptbot','claudebot','perplexitybot','google-extended','ccbot','anthropic-ai'];
+    const hit = bots.filter(b => new RegExp(b + '[\\s\\S]{0,200}?disallow:\\s*/\\s*','i').test(txt));
+    rows.push(hit.length
+      ? techRow(false,'AI 크롤러 접근',`<b style="color:var(--bad)">${hit.join(', ')}가 차단되어 있습니다.</b> 이 상태로는 어떤 GEO 작업도 무의미합니다.`,3)
+      : techRow(true,'AI 크롤러 접근','robots.txt가 주요 AI 크롤러를 차단하지 않습니다.',3));
+    rows.push(/sitemap:/i.test(txt)
+      ? techRow(true,'robots.txt 내 sitemap 선언','선언되어 있습니다.',1)
+      : techRow(false,'robots.txt 내 sitemap 선언','Sitemap 지시자가 없습니다. 한 줄 추가하세요.',1));
+  }
+
+  rows.push(llms.ok ? techRow(true,'llms.txt',`존재합니다 (${llms.text.length.toLocaleString()}자).`,2)
+    : llms.blocked ? techRow('warn','llms.txt','CORS로 확인 불가. 직접 열어보세요.',2)
+    : techRow(false,'llms.txt','없습니다. AI 크롤러에 사이트 구조를 알려주는 신규 표준입니다. 추가 권장.',2));
+
+  rows.push(llmsFull.ok ? techRow(true,'llms-full.txt','존재합니다.',1)
+    : llmsFull.blocked ? techRow('warn','llms-full.txt','CORS로 확인 불가.',1)
+    : techRow(false,'llms-full.txt','없습니다. 본문까지 담은 확장판입니다. 선택 사항.',1));
+
+  if(sm.ok){
+    const n = (sm.text.match(/<loc>/g) || []).length;
+    rows.push(techRow(true,'sitemap.xml',`URL ${n.toLocaleString()}개가 등록되어 있습니다.`,2));
+  } else rows.push(sm.blocked ? techRow('warn','sitemap.xml','CORS로 확인 불가.',2)
+    : techRow(false,'sitemap.xml',`HTTP ${sm.status} — 없습니다.`,2));
+
+  const pageUrl = $('#techPage').value.trim();
+  if(pageUrl){
+    const pg = await tryFetch(pageUrl);
+    if(pg.ok) rows.push(...pageRows(auditHtml(pg.text)));
+    else rows.push(techRow('warn','콘텐츠 페이지',
+      pg.blocked ? 'CORS로 읽지 못했습니다. 아래 "HTML 직접 붙여넣기"를 쓰세요.' : `HTTP ${pg.status}`,3));
+  }
+  renderTech(rows, blocked);
+}
+
+function pageRows(a){
+  const r = [];
+  const has = t => a.jsonld.some(x => String(x).includes(t));
+  r.push(a.jsonld.length ? techRow(true,'구조화 데이터(JSON-LD)',`${a.jsonld.join(', ')}`,3)
+    : techRow(false,'구조화 데이터(JSON-LD)','없습니다. AI가 답을 추출할 근거 구조가 없습니다.',3));
+  r.push((has('FAQPage')||has('HowTo')) ? techRow(true,'FAQPage / HowTo 스키마','적용되어 있습니다. AI 답변 추출에 가장 유리한 형식입니다.',3)
+    : techRow(false,'FAQPage / HowTo 스키마','없습니다. 질문-답변 형식 스키마를 추가하세요.',3));
+  r.push(a.dateModified ? techRow(true,'dateModified',`${a.dateModified} — 신선도 신호가 있습니다.`,2)
+    : techRow(false,'dateModified','없습니다. AI는 최신성을 중요하게 봅니다.',2));
+  const q = a.h1 && /[?？]|^(how|what|why|where|which|can|is|do)\b/i.test(a.h1);
+  r.push(q ? techRow(true,'H1 질문형',`"${esc(a.h1)}"`,2)
+    : techRow('warn','H1 질문형',`"${esc(a.h1||'(없음)')}" — AI는 질문과 제목을 매칭합니다. 사람이 실제로 치는 질문 문장에 맞추세요.`,2));
+  r.push(a.desc ? techRow(true,'meta description','있습니다.',1)
+    : techRow(false,'meta description','없습니다.',1));
+  return r;
+}
+
+function renderTech(rows, blocked){
+  const tot = rows.reduce((s,r)=>s+r.weight,0);
+  const got = rows.reduce((s,r)=>s + (r.ok===true ? r.weight : r.ok==='warn' ? r.weight*0.5 : 0), 0);
+  const score = Math.round(got/Math.max(1,tot)*100);
+  $('#techScore').textContent = score + '점';
+  $('#techOut').innerHTML = `
+    ${blocked ? '<div class="note warn" style="margin-bottom:16px"><b>이 사이트는 브라우저에서 직접 읽을 수 없습니다(CORS).</b> 아래 결과는 불완전합니다. 페이지 소스를 복사해 왼쪽 하단에 붙여넣으면 정확히 점검됩니다.</div>' : ''}
+    <div class="card"><table><tbody>${rows.map(r=>r.html).join('')}</tbody></table>
+    <div class="hint" style="margin-top:14px">점수는 가중 합산이며 절대 기준이 아닙니다.
+    <b>AI 크롤러 차단</b>과 <b>FAQPage/HowTo 스키마</b>가 가장 영향이 큽니다.</div></div>`;
+}
+
+function auditPasted(){
+  const html = $('#techHtml').value.trim();
+  if(!html) return toast('HTML을 붙여넣으세요');
+  $('#techEmpty').style.display='none';
+  renderTech(pageRows(auditHtml(html)), false);
+  toast('붙여넣은 HTML 점검 완료');
+}
+
 /* ---------------------------------------------------------- 가격표 · 가이드 */
 function renderPrice(){
   const rows = [
@@ -821,6 +1184,8 @@ function saveKey(){ S.key = $('#apiKey').value.trim(); localStorage.setItem('av_
 
 (function boot(){
   $('#engine').innerHTML = Object.entries(ENGINES).map(([k,v],i)=>`<option value="${k}"${i===0?' selected':''}>${v.label}</option>`).join('');
+  $('#lang').innerHTML = Object.entries(LANGS).map(([k,v])=>`<option value="${k}"${k===S.lang?' selected':''}>${v.label}</option>`).join('');
+  $('#lang').onchange = () => { S.lang = $('#lang').value; };
   const gOpts = { off:{ko:'끄기 (학습지식)'}, on:{ko:'켜기 (웹검색)'} };
   $('#groundChips').innerHTML = Object.entries(gOpts).map(([k,v])=>`<button class="chip${S.ground===k?' on':''}" data-k="${k}">${v.ko}</button>`).join('');
   $('#groundChips').onclick = e => { const b=e.target.closest('.chip'); if(!b) return; S.ground=b.dataset.k;
@@ -838,7 +1203,7 @@ function saveKey(){ S.key = $('#apiKey').value.trim(); localStorage.setItem('av_
 
   $('#apiKey').value = S.key;
   $('#keyDot').classList.toggle('on', !!S.key);
-  renderPrice(); renderGuide(); updateEstimate();
+  renderPrice(); renderGuide(); renderSnaps(); updateEstimate();
   if(!S.key) setTimeout(openKey, 600);
 })();
 </script>
