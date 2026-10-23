@@ -256,20 +256,34 @@ tr:last-child td{border-bottom:none}
 .tcard .td{font-size:10.5px;color:var(--ink-dim);line-height:1.45}
 
 /* 고객 발송용 리포트 (인쇄 최적화) */
-#report{background:#fff;color:#16181D;border-radius:var(--r-lg);padding:40px;max-width:900px;margin:0 auto}
-#report h1{font-family:var(--font-display);font-size:28px;margin-bottom:6px;color:#0F1115}
-#report h2{font-size:15px;margin:28px 0 10px;color:#0F1115;border-bottom:2px solid #16181D;padding-bottom:6px}
-#report .sub{color:#6B7280;font-size:12.5px;margin-bottom:22px}
+/* 리포트는 인쇄물이므로 항상 밝게 유지하되, 선택한 유형의 강조색·모서리·테두리를 물려받는다 */
+#report{
+  --rp-bg:#FFFFFF; --rp-ink:#16181D; --rp-muted:#5E6673; --rp-line:#E5E7EB;
+  --rp-soft:#F9FAFB; --rp-accent:var(--accent-deep); --rp-rad:12px; --rp-bw:1px; --rp-rule:2px;
+  background:var(--rp-bg);color:var(--rp-ink);border-radius:var(--r-lg);padding:40px;max-width:900px;margin:0 auto}
+#report h1{font-family:var(--font-display);font-size:28px;margin-bottom:6px;color:var(--rp-ink)}
+#report h2{font-size:15px;margin:28px 0 10px;color:var(--rp-ink);border-bottom:var(--rp-rule) solid var(--rp-accent);padding-bottom:6px}
+#report .sub{color:var(--rp-muted);font-size:12.5px;margin-bottom:22px}
 #report table{font-size:12px}
-#report th{color:#6B7280;border-bottom:1px solid #E5E7EB}
-#report td{border-bottom:1px solid #F3F4F6;color:#16181D}
+#report th{color:var(--rp-muted);border-bottom:var(--rp-bw) solid var(--rp-line)}
+#report td{border-bottom:var(--rp-bw) solid var(--rp-line);color:var(--rp-ink)}
 #report .big{font-size:40px;font-weight:700;letter-spacing:-.02em}
-#report .muted{color:#6B7280}
-#report .box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:16px;margin:12px 0}
+#report .muted{color:var(--rp-muted)}
+#report .box{background:var(--rp-soft);border:var(--rp-bw) solid var(--rp-line);border-radius:var(--rp-rad);padding:16px;margin:12px 0}
 #report .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
-#report .grid3 div{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px}
-#report .grid3 .k{font-size:10.5px;color:#6B7280;text-transform:uppercase;letter-spacing:.05em}
-#report .grid3 .v{font-size:23px;font-weight:700;margin-top:4px}
+#report .grid3 div{background:var(--rp-soft);border:var(--rp-bw) solid var(--rp-line);border-radius:var(--rp-rad);padding:14px}
+#report .grid3 .k{font-size:10.5px;color:var(--rp-muted);text-transform:uppercase;letter-spacing:.05em}
+#report .grid3 .v{font-size:23px;font-weight:700;margin-top:4px;color:var(--rp-accent)}
+
+/* 유형이 리포트에 남기는 흔적 */
+:root[data-type="paper"] #report{--rp-bg:#FFFDF8;--rp-soft:#F7F3EA;--rp-line:#E6DFD1;--rp-rad:8px}
+:root[data-type="soft"] #report{--rp-soft:#EFF2F7;--rp-line:#DDE3EC;--rp-rad:18px;--rp-rule:3px}
+:root[data-type="grid"] #report{--rp-rad:0;--rp-line:#D8D8D8;--rp-soft:#FAFAFA}
+:root[data-type="document"] #report{--rp-rad:0;--rp-accent:#0A0A0A;--rp-line:#D8D8D8;--rp-soft:#F6F6F6}
+:root[data-type="bold"] #report{--rp-rad:0;--rp-bw:2px;--rp-rule:3px;--rp-line:#0A0A0A;--rp-soft:#FFFBEE;--rp-bg:#FFFFFF}
+:root[data-type="console"] #report{--rp-rad:3px;--rp-accent:#18794E}
+:root[data-type="numeric"] #report{--rp-rad:2px;--rp-accent:#C2461B}
+:root[data-type="glass"] #report{--rp-rad:18px;--rp-accent:#2E5CB8}
 @media print{
   body{background:#fff}
   header.top,nav.tabs,.panel:not(.on),#reportActions{display:none!important}
@@ -1179,16 +1193,27 @@ function buildReport(){
 }
 
 function downloadReport(){
+  // 화면에서 쓰이는 실제 값을 구워 넣어, 저장한 파일도 같은 유형으로 보이게 한다
+  const rs = getComputedStyle($('#report'));
+  const V = n => rs.getPropertyValue(n).trim() || '';
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>AI 검색 노출 진단</title>
-<style>body{font-family:-apple-system,'Pretendard',sans-serif;max-width:900px;margin:40px auto;padding:0 24px;color:#16181D;line-height:1.6}
-h1{font-size:28px;margin-bottom:6px}h2{font-size:15px;margin:28px 0 10px;border-bottom:2px solid #16181D;padding-bottom:6px}
-.sub{color:#6B7280;font-size:12.5px;margin-bottom:22px}table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
-th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #F3F4F6}th{color:#6B7280;border-bottom:1px solid #E5E7EB}
-.box{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:16px;margin:12px 0;font-size:13px}
+<style>:root{--rp-bg:${V('--rp-bg')};--rp-ink:${V('--rp-ink')};--rp-muted:${V('--rp-muted')};
+--rp-line:${V('--rp-line')};--rp-soft:${V('--rp-soft')};--rp-accent:${V('--rp-accent')};
+--rp-rad:${V('--rp-rad')};--rp-bw:${V('--rp-bw')};--rp-rule:${V('--rp-rule')}}
+body{font-family:-apple-system,'Pretendard',sans-serif;max-width:900px;margin:40px auto;padding:0 24px;
+  background:var(--rp-bg);color:var(--rp-ink);line-height:1.6}
+h1{font-size:28px;margin-bottom:6px}
+h2{font-size:15px;margin:28px 0 10px;border-bottom:var(--rp-rule) solid var(--rp-accent);padding-bottom:6px}
+.sub{color:var(--rp-muted);font-size:12.5px;margin-bottom:22px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+th,td{padding:8px 10px;text-align:left;border-bottom:var(--rp-bw) solid var(--rp-line)}
+th{color:var(--rp-muted)}
+.box{background:var(--rp-soft);border:var(--rp-bw) solid var(--rp-line);border-radius:var(--rp-rad);padding:16px;margin:12px 0;font-size:13px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
-.grid3 div{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px}
-.grid3 .k{font-size:10.5px;color:#6B7280;text-transform:uppercase}.grid3 .v{font-size:23px;font-weight:700;margin-top:4px}
-.muted{color:#6B7280}</style></head><body>${$('#report').innerHTML}</body></html>`;
+.grid3 div{background:var(--rp-soft);border:var(--rp-bw) solid var(--rp-line);border-radius:var(--rp-rad);padding:14px}
+.grid3 .k{font-size:10.5px;color:var(--rp-muted);text-transform:uppercase}
+.grid3 .v{font-size:23px;font-weight:700;margin-top:4px;color:var(--rp-accent)}
+.muted{color:var(--rp-muted)}</style></head><body>${$('#report').innerHTML}</body></html>`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([html], { type:'text/html;charset=utf-8' }));
   a.download = `AI검색진단_${$('#reportBrand').value}_${new Date().toISOString().slice(0,10)}.html`;
@@ -1218,9 +1243,12 @@ ${eng}에 실제 고객이 물어볼 법한 구매 질문 ${rows.length}개를 �
 · ${name} 노출률: ${pct(st.exposure)} (${rows.length}개 중 ${st.mentions}개)
 · 같은 질문에서 ${leader.name}: ${pct(leader.exposure)}
 · ${J(name,'iga')} 전혀 등장하지 않은 질문: ${st.missing.length}개
+· 측정 조건: ${eng} / ${LANGS[S.lang]?.label || S.lang} / 질문당 ${S.repeat}회 반복
 
 예를 들어 아래 질문들에서는 ${J(name,'iga')} 언급되지 않았습니다.
 ${sample.map(q => '  - ' + q).join('\n')}
+
+AI 응답은 같은 질문에도 매번 달라집니다. 그래서 한 번만 재고 보고드리지 않고 ${S.repeat}회씩 질의해 평균을 냈습니다.
 
 작년과 달리 ChatGPT 월 사용자가 2,470만 명을 넘었고, 검색 대신 AI에게 바로 묻고 구매하는 비중이 늘고 있습니다.
 AI 답변에 들어가 있느냐 아니냐가 매출에 영향을 주기 시작하는 구간입니다.
@@ -1246,7 +1274,8 @@ AI 검색 노출(GEO)을 측정하고 개선 로드맵을 만드는 일을 하�
 ${sample.map(q => '  - ' + q).join('\n')}
 
 미리 말씀드릴 것이 있습니다. 노출을 "반드시 올려드린다"고는 하지 않겠습니다.
-AI가 검색 없이 학습된 지식으로 답하는 경우가 많아 개선에는 시간이 걸립니다.
+측정한 ${rows.length}개 질문 중 AI가 실제로 웹을 검색한 것은 ${Math.round((S.density||[]).reduce((a,x)=>a+(x.searchRate ?? (x.searched?1:0)),0)/Math.max(1,(S.density||[]).length)*100)}%였습니다.
+나머지는 학습된 지식으로 답하기 때문에, 콘텐츠를 새로 써도 단기간에 반영되지 않습니다.
 대신 측정과 월간 추적, 그리고 어떤 질문부터 손대야 하는지는 명확하게 드릴 수 있습니다.
 
 30분만 시간 주시면 측정 결과를 화면으로 보여드리겠습니다.
@@ -1464,6 +1493,28 @@ function renderPrice(){
 
 function renderGuide(){
   $('#guide').innerHTML = `
+<h2>이 도구가 재는 것 — 남들이 안 재는 네 가지</h2>
+<div class="note good">
+<b>1. 검색 발동률.</b> AI가 웹을 검색했는지, 학습된 기억으로 답했는지를 구분합니다.
+이게 <b>콘텐츠로 개입이 가능한지</b>를 가릅니다. 실측에서 영어 질문은 31/31 전부 검색이 발동했지만
+한국어 질문은 36개 중 <b>0건</b>이었습니다.<br><br>
+<b>2. 질문별 인용 출처 수.</b> 그 질문이 얼마나 붐비는지입니다. 출처가 0~2개면 아직 아무도 답을 안 쓴 자리입니다.<br><br>
+<b>3. 반복 측정.</b> AI 응답은 같은 질문에도 매번 달라집니다. 실측에서 동일 조건 재실행 시
+검색 발동률이 <b>50% → 13%</b>로 튀었고, 어떤 브랜드는 1회 측정 <b>0%</b>가 2회 반복에서 <b>33.3%</b>로 바뀌었습니다.
+단발로 재면 틀린 영업 명단을 만듭니다.<br><br>
+<b>4. 언어별 차이.</b> 12개 언어로 측정합니다. 같은 브랜드라도 언어마다 경쟁 밀도와 검색 발동률이 다릅니다.
+</div>
+
+<h2>쓰는 순서</h2>
+<ol>
+<li><b>원클릭 진단</b>에 고객 도메인만 넣습니다. 업종·브랜드·언어·경쟁사·질문이 자동으로 채워집니다 (30원 내외)</li>
+<li><b>일괄 스캔</b>을 실행합니다. 반복은 2회 이상을 권장합니다</li>
+<li><b>공략 지도</b>에서 비어 있는 질문을 확인합니다. 검색이 발동한 것만 즉시 공략 대상입니다</li>
+<li><b>기술 진단</b>으로 robots.txt의 AI 크롤러 차단 여부를 확인합니다. 막혀 있으면 다른 작업이 전부 무의미합니다</li>
+<li><b>추적</b> 탭에서 기준선을 저장합니다. 4주 뒤 같은 질문으로 재측정해 전후를 비교합니다</li>
+<li><b>진단 리포트</b>를 고객에게 보냅니다. <b>영업 자료</b> 탭에서 메일 문안이 자동 생성됩니다</li>
+</ol>
+
 <h2>이 도구가 푸는 문제는 "고객"입니다</h2>
 <p>대부분의 사업은 만들고 나서 고객을 찾습니다. 이 도구는 순서가 반대입니다.
 업종 하나를 정해 30개 기업을 한 번에 스캔하면, <b>경쟁사는 AI 답변에 나오는데 자기만 안 나오는 회사</b>가 자동으로 추려집니다.
@@ -1487,6 +1538,10 @@ function renderGuide(){
 <li><b>순위 상승 보장.</b> AI가 검색 없이 학습된 지식으로 답하는 경우가 많아 콘텐츠를 새로 써도 즉시 반영되지 않습니다. 보장하면 환불 분쟁이 납니다.</li>
 <li><b>측정하지 않은 엔진을 리포트에 쓰는 것.</b> Gemini로 측정했으면 Gemini라고 쓰십시오. "ChatGPT에서도"라고 쓰는 순간 신뢰를 잃습니다.</li>
 <li><b>단일 측정값을 확정적으로 말하는 것.</b> AI 응답은 시점·계정·지역에 따라 달라집니다. 추세로 말해야 합니다.</li>
+<li><b>1회 측정으로 성과를 주장하는 것.</b> 한 자리 숫자 지표는 반복 간 변동이 변화 폭보다 큽니다.
+반복 2회 이상으로 재고, 변화가 변동보다 큰지 먼저 확인하십시오.</li>
+<li><b>질문 세트를 바꾸고 전후를 비교하는 것.</b> 질문이 한 글자라도 바뀌면 비교가 깨집니다.
+추적 탭이 이 경우 경고를 띄웁니다.</li>
 </ul>
 
 <h2>경쟁 현황 (2026년 10월 기준)</h2>
