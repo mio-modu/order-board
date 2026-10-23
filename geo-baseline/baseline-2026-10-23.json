@@ -1,0 +1,198 @@
+{
+  "measured_at": "2026-10-23",
+  "engine": "gemini-3-flash-preview",
+  "grounding": "on",
+  "repeats": 1,
+  "note": "4주 뒤 재측정 시 아래 질문을 한 글자도 바꾸지 말 것. 바꾸면 비교가 깨진다.",
+  "sets": {
+    "kpopgo_en": {
+      "label": "KPOPGO 영문 31문항",
+      "language": "en",
+      "questions": [
+        "How can international fans buy K-pop concert tickets in Korea from overseas?",
+        "Step by step guide to buying tickets on Interpark Global as a foreigner",
+        "How do I buy Korean concert tickets if I don't live in Korea?",
+        "What time do K-pop concert tickets go on sale in Korea and what timezone?",
+        "Why can't foreigners buy tickets on Melon Ticket and what are the alternatives?",
+        "How to pass Korean identity verification to buy concert tickets as a foreigner",
+        "What is a foreigner registration number and do I need one to buy K-pop tickets?",
+        "Can I verify my identity on Korean ticketing sites with a foreign phone number?",
+        "How to get a Korean phone verification for ticketing without living in Korea",
+        "PASS app alternative for foreigners buying Korean tickets",
+        "Can I use a foreign credit card to buy K-pop tickets from Korean sites?",
+        "Which payment methods work for international fans on Weverse Shop?",
+        "Why does my foreign card get declined on Korean ticketing websites?",
+        "Best way to pay for Korean concert tickets from abroad in 2026",
+        "How do international fans join a K-pop fan club presale from outside Korea?",
+        "Is it worth buying a K-pop fan club membership for presale access as a foreigner?",
+        "How does Weverse membership presale work for international fans?",
+        "How to order K-pop albums from Korea so they count for Hanteo and Circle charts",
+        "Which K-pop album shops ship internationally and count for charts?",
+        "Is Weverse Shop or Ktown4u better for international album orders?",
+        "How to buy K-pop album pre-orders from overseas safely",
+        "What do the Korean words on Interpark ticketing page mean in English?",
+        "English translation guide for Korean ticket booking websites",
+        "How to navigate Yes24 ticket site if you don't read Korean",
+        "I got an error buying Korean concert tickets from abroad, what do I do?",
+        "Is it safe to use a ticket proxy service for K-pop concerts in Korea?",
+        "How to avoid scams when buying K-pop tickets from overseas resellers",
+        "What happens if my Korean ticket order is cancelled for being a foreigner?",
+        "What is kpopgo.app?",
+        "Best English guides for K-pop ticketing for international fans",
+        "Where can international K-pop fans find reliable ticketing instructions?"
+      ],
+      "baseline": {
+        "questions": 31,
+        "search_fired": 31,
+        "kpopgo_cited": 3,
+        "avg_sources": 5.16,
+        "top_domains": [
+          [
+            "reddit.com",
+            14
+          ],
+          [
+            "haniseoul.com",
+            11
+          ],
+          [
+            "kpoptrips.com",
+            9
+          ],
+          [
+            "whatsonkr.com",
+            9
+          ],
+          [
+            "namanecard.com",
+            8
+          ],
+          [
+            "gofarther.blog",
+            6
+          ],
+          [
+            "teuida.net",
+            5
+          ],
+          [
+            "kculture.com",
+            3
+          ],
+          [
+            "koreaeasytrip.com",
+            3
+          ],
+          [
+            "nol.com",
+            3
+          ],
+          [
+            "youtube.com",
+            3
+          ],
+          [
+            "kpopgo.app",
+            3
+          ]
+        ]
+      }
+    },
+    "kpopgo_fil": {
+      "label": "KPOPGO Filipino 20문항",
+      "language": "fil",
+      "questions": [
+        "paano bumili ng kpop concert tickets sa korea kung nasa ibang bansa",
+        "anong ticketing site ang gamit for [group name] concert sa korea",
+        "paano mag identity verification sa ticketing sites kung hindi taga korea",
+        "pwede ba mag ticket verification kahit walang korean phone number",
+        "guide paano mag sign up sa NOL world (interpark global) for foreigners",
+        "bakit error o declined yung credit card ko sa korean ticketing site",
+        "anong payment methods ang tinatanggap for international fans sa ticketing",
+        "anong oras ang start ng ticketing sa korea converted to ph time",
+        "tips sa waiting room queue at paano mabilis makapili ng seats",
+        "paano mag register for fanclub presale sa korea concert",
+        "worth it ba bumili ng official membership para lang sa presale",
+        "paano ba gumagana yung weverse membership para sa international fans",
+        "tutorial paano mag order sa weverse shop ph shipping address",
+        "saan bibili ng album para counted sa hanteo at circle chart",
+        "magkano ang customs duties at shipping pag nag order ng albums from korea",
+        "ano yung mga korean words sa ticketing site translation please",
+        "nacancel yung ticket order ko sa korea anong pwedeng gawin",
+        "scam ba o safe ba gumamit ng ticketing proxy services",
+        "paano gamitin yung mobile ticket pagpasok sa venue sa korea",
+        "paano ang process ng refund at cancellation ng ticket sa korea"
+      ],
+      "baseline": {
+        "questions": 20,
+        "search_fired": 20,
+        "kpopgo_cited": 2,
+        "avg_sources": 5.55
+      }
+    },
+    "kpopgo_pt-br": {
+      "label": "KPOPGO Brazilian Portuguese 20문항",
+      "language": "pt-br",
+      "questions": [
+        "como comprar ingresso de show de kpop na coreia morando no brasil",
+        "qual site oficial costuma vender ingresso de k-pop na coreia",
+        "como estrangeiro consegue passar na verificação de identidade coreana",
+        "precisa de número de telefone coreano pra comprar ingresso de show",
+        "passo a passo para criar conta no nol world interpark global",
+        "meu cartão internacional foi recusado no site de ingresso coreano o que fazer",
+        "quais formas de pagamento funcionam pra fã internacional comprar ingresso na coreia",
+        "que horas abrem as vendas na coreia convertendo pro horário de brasília",
+        "como funciona a fila de espera e a seleção de assentos nos sites coreanos",
+        "como participar da pré-venda de fã-clube oficial morando no exterior",
+        "vale a pena pagar o membership do grupo pra ter prioridade no ingresso",
+        "como funciona o weverse membership para fãs internacionais",
+        "como comprar no weverse shop e mandar entregar no brasil",
+        "onde comprar álbum de kpop que conte pros charts hanteo e circle",
+        "taxa de importação e frete comprando álbum de kpop direto da coreia",
+        "tradução dos botões em coreano na hora de comprar o ingresso",
+        "tive meu ingresso comprado na coreia cancelado o que eu faço",
+        "é seguro usar proxy ou comprar ingresso de revenda no twitter",
+        "como funciona o ingresso digital e a entrada no show na coreia",
+        "regras de cancelamento e reembolso de ingressos em sites coreanos"
+      ],
+      "baseline": {
+        "questions": 20,
+        "search_fired": 20,
+        "kpopgo_cited": 1,
+        "avg_sources": 4.1
+      }
+    },
+    "kpopgo_th": {
+      "label": "KPOPGO Thai 20문항",
+      "language": "th",
+      "questions": [
+        "วิธีกดบัตรคอนเสิร์ตเกาหลีจากไทย ต้องทำยังไงบ้าง",
+        "เช็คยังไงว่าคอนเสิร์ตเกาหลีวงที่เราชอบขายบัตรในเว็บไหน",
+        "วิธียืนยันตัวตนเว็บกดบัตรเกาหลีสำหรับชาวต่างชาติ (Self-verification)",
+        "ไม่มีเบอร์โทรศัพท์เกาหลี ยืนยันตัวตนในเว็บกดบัตรยังไง",
+        "วิธีสมัครสมาชิก NOL World หรือ Interpark Global สำหรับแฟนต่างชาติ",
+        "บัตรเครดิตไทยจ่ายเงินเว็บกดบัตรเกาหลีไม่ได้ ขึ้น Error ทำยังไง",
+        "กดบัตรคอนเสิร์ตเกาหลี จ่ายเงินวิธีไหนได้บ้างสำหรับคนไทย",
+        "กดบัตรคอนเสิร์ตเกาหลี 2 ทุ่มเกาหลี คือกี่โมงในไทย",
+        "วิธีกดบัตรคอนเสิร์ตเกาหลี หน้าคิวรอคิวเข้าเว็บนานไหม เลือกที่นั่งยังไง",
+        "ขั้นตอนการใช้สิทธิ์กดบัตรรอบ Fanclub Presale จากต่างประเทศ",
+        "สมัคร Membership จ่ายเงินคุ้มไหมถ้าจะเอาไว้กดบัตรรอบพรีเซลล์",
+        "Weverse Membership สำหรับแฟนอินเตอร์สมัครยังไง สิทธิประโยชน์มีอะไรบ้าง",
+        "สั่งของจาก Weverse Shop ให้ส่งมาไทย ต้องตั้งค่าที่อยู่ยังไง",
+        "ซื้ออัลบั้ม K-pop เว็บไหนนับเข้าชาร์ตเกาหลีแน่นอน",
+        "สั่งบั้มเกาหลีมาไทยเสียภาษีเยอะไหม ค่าส่งแพงหรือเปล่า",
+        "คำศัพท์ภาษาเกาหลีในหน้ากดบัตรที่ควรรู้ แปลว่าอะไรบ้าง",
+        "บัตรคอนเสิร์ตเกาหลีโดนแคนเซิล (Cancelled) ต้องติดต่อใคร",
+        "จ้างกดบัตรหรือซื้อบัตรต่อจากคนอื่นในเกาหลีเสี่ยงโดนโกงไหม",
+        "การใช้บัตรคอนเสิร์ตแบบ Mobile Ticket เข้างานที่เกาหลีต้องเตรียมอะไรบ้าง",
+        "กฎการคืนเงินและการยกเลิกบัตรคอนเสิร์ตเกาหลี ได้เงินคืนกี่เปอร์เซ็นต์"
+      ],
+      "baseline": {
+        "questions": 20,
+        "search_fired": 15,
+        "kpopgo_cited": 1,
+        "avg_sources": 3.85
+      }
+    }
+  }
+}
