@@ -185,6 +185,16 @@ tr:last-child td{border-bottom:none}
 <section class="panel on" id="p-scan">
   <div class="cols">
     <div class="sticky">
+      <div class="card" style="border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,.12)">
+        <h3>⚡ 원클릭 진단 — 도메인만 넣으세요</h3>
+        <div class="field">
+          <input type="text" id="autoDomain" placeholder="example.com 또는 브랜드명">
+        </div>
+        <button class="btn primary full" onclick="autoSetup()">업종 · 경쟁사 자동 파악</button>
+        <div class="progress"><div class="b" id="autoProg"></div></div>
+        <div class="hint" id="autoStatus">AI가 웹을 검색해 업종과 경쟁사를 알아낸 뒤 아래 항목을 자동으로 채웁니다.</div>
+      </div>
+
       <div class="card">
         <h3><span class="num">1</span> 시장 정의</h3>
         <div class="field"><label class="f">업종 / 카테고리</label>
@@ -498,6 +508,67 @@ async function ask(prompt, { json=false, ground=false, engine=null } = {}){
   throw last || new Error('실패');
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------------------------------------------------------- 원클릭 자동 설정 */
+/* 미팅에서 고객 도메인 하나만 받아 30초 안에 결과를 보여주기 위한 경로.
+   업종과 경쟁사를 사람이 입력하게 두면 범용 도구가 되지 못한다. */
+async function autoSetup(){
+  const raw = $('#autoDomain').value.trim();
+  if(!raw) return toast('도메인이나 브랜드명을 입력하세요');
+  if(!S.key) return openKey();
+  const dom = raw.replace(/^https?:\/\//,'').replace(/\/.*$/,'');
+
+  const step = (pctv, msg) => { $('#autoProg').style.width = pctv+'%'; $('#autoStatus').textContent = msg; };
+  step(15, '웹에서 ' + dom + ' 정보를 찾는 중…');
+
+  try{
+    // 1) 그라운딩으로 실제 웹을 뒤져 회사 정체를 파악한다
+    const probe = await ask(
+      `Research the website or brand "${dom}". Tell me concisely:\n` +
+      `1) What it does (one sentence)\n2) Its industry/category\n3) Its primary market country and language\n` +
+      `4) The names of up to 8 real competing companies or services in that same category.\n` +
+      `If you cannot find it, say NOT_FOUND.`,
+      { ground:true });
+
+    if(/NOT_FOUND/i.test(probe.text) && probe.text.length < 200)
+      throw new Error('웹에서 이 도메인을 찾지 못했습니다. 업종과 경쟁사를 직접 입력해주세요.');
+
+    step(55, '업종과 경쟁사를 정리하는 중…');
+
+    // 2) 구조화
+    const j = await ask(
+      `From the research notes below, output strict JSON:\n` +
+      `{"brand":"<the brand's own name>","industry":"<buyer-facing category in the market's own language, ` +
+      `phrased as the market a customer would search in>","lang":"<one of: ${Object.keys(LANGS).join('|')}>",` +
+      `"competitors":["<up to 8 real competitor brand names>"]}\n` +
+      `Use the market's own language for "industry". Do not invent competitors; if unsure return fewer.\n\n` +
+      `NOTES:\n${probe.text.slice(0,4000)}`,
+      { json:true });
+
+    let d;
+    try{ d = JSON.parse(j.text); }
+    catch{ throw new Error('자동 파악에 실패했습니다. 직접 입력해주세요.'); }
+
+    const brand = (d.brand || dom).trim();
+    const comps = (Array.isArray(d.competitors) ? d.competitors : []).map(x=>String(x).trim()).filter(Boolean).slice(0,8);
+    if(d.lang && LANGS[d.lang]){ S.lang = d.lang; $('#lang').value = d.lang; }
+    $('#industry').value = d.industry || '';
+    $('#myBrand').value = brand;
+    $('#brands').value = [brand, ...comps.filter(c => c.toLowerCase() !== brand.toLowerCase())].join('\n');
+
+    step(75, '구매 질문 세트를 만드는 중…');
+    await genQuestions();
+
+    step(100, `완료 — ${brand} + 경쟁사 ${comps.length}곳 · ${LANGS[S.lang].label} · 질문 ${S.questions.length}개. 이제 스캔을 실행하세요.`);
+    $('#techDomain').value = dom;
+    updateEstimate();
+    toast('자동 설정 완료');
+  }catch(e){
+    $('#autoProg').style.width='0%';
+    $('#autoStatus').textContent = '실패: ' + (e.message || e);
+    toast('자동 설정 실패');
+  }
+}
 
 /* ---------------------------------------------------------- 질문 생성 */
 async function genQuestions(){
