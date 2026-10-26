@@ -1,0 +1,562 @@
+[
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "W Style Dental",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/W_Style_Dental.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Good Life Dental Party",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Good_Life_Dental_Party.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "E-Line Orthodontic Clinic",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/E_Line_Orthodontic_Clinic.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Yonsei U-Line Dental Clinic",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Yonsei_U_Line_Dental_Clinic.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Apple Tree Dental Hospital",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Apple_Tree_Dental_Hospital.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Su-Dental Clinic",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Su_Dental_Clinic.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "TesterKorea",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/TesterKorea.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "KoreaDepart",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/KoreaDepart.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Gmarket Global",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Gmarket_Global.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Funtastic Korea",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국_여행_투어/Funtastic_Korea.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "HanaTour ITC",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국_여행_투어/HanaTour_ITC.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Global Interpark",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국_여행_투어/Global_Interpark.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Wondertrip",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국_여행_투어/Wondertrip.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Indie-way",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국_여행_투어/Indie_way.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "This is Korea",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국_여행_투어/This_is_Korea.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Yonsei University Korean Language Institute",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Yonsei_University_Korean_Language_Institute.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Sogang University Korean Language Education Center",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Sogang_University_Korean_Language_Education_Center.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Seoul National University Language Education Institute",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Seoul_National_University_Language_Education_Institute.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Korea University Korean Language Center",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Korea_University_Korean_Language_Center.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Ewha Womans University Ewha Language Center",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Ewha_Womans_University_Ewha_Language_Center.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Go! Go! Hanguk",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Go_Go_Hanguk.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Ganada Korean Language Institute",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Ganada_Korean_Language_Institute.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Best Friend Korean Language School",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Best_Friend_Korean_Language_School.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Kyung Hee University Institute of International Education",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Kyung_Hee_University_Institute_of_International_Education.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Cokoyam",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Cokoyam.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Okvit",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Okvit.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "NikanKitchen",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_푸드_해외_직구/NikanKitchen.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Kooding",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Kooding.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Dream Plastic Surgery",
+  "exposure": 0.0,
+  "missing": 20,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Dream_Plastic_Surgery.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Oaks Dental Clinic",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Oaks_Dental_Clinic.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "MINISH Dental Hospital",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/MINISH_Dental_Hospital.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Seoul Guide Medical",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Seoul_Guide_Medical.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Bright Dental Clinic",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Bright_Dental_Clinic.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Roseroseshop",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Roseroseshop.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "BeautyNetKorea",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/BeautyNetKorea.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Seoul Pass",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "한국_여행_투어/Seoul_Pass.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "KoreaTravelEasy",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "한국_여행_투어/KoreaTravelEasy.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "11STREET Global",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "K_푸드_해외_직구/11STREET_Global.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Koreadepart",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Koreadepart.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Eunogo",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Eunogo.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Docfinderkorea",
+  "exposure": 0.025,
+  "missing": 19,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Docfinderkorea.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "S-PLANT Dental Hospital",
+  "exposure": 0.05,
+  "missing": 19,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/S_PLANT_Dental_Hospital.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Creatrip",
+  "exposure": 0.05,
+  "missing": 19,
+  "q": 20,
+  "file": "한국_여행_투어/Creatrip.html"
+ },
+ {
+  "cat": "치과 의료관광 (임플란트·교정)",
+  "name": "Hus-hu Dental Clinic",
+  "exposure": 0.05,
+  "missing": 18,
+  "q": 20,
+  "file": "치과_의료관광_임플란트_교정/Hus_hu_Dental_Clinic.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Wishtrend",
+  "exposure": 0.05,
+  "missing": 18,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Wishtrend.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Kim'C Market",
+  "exposure": 0.05,
+  "missing": 18,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Kim_C_Market.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Wonjin Plastic Surgery",
+  "exposure": 0.05,
+  "missing": 18,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Wonjin_Plastic_Surgery.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Soko Glam",
+  "exposure": 0.075,
+  "missing": 18,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Soko_Glam.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Green Korean Language School",
+  "exposure": 0.075,
+  "missing": 18,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Green_Korean_Language_School.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Korean Snack Box",
+  "exposure": 0.1,
+  "missing": 17,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Korean_Snack_Box.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Rolling Korea",
+  "exposure": 0.15,
+  "missing": 16,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Rolling_Korea.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Wooltari",
+  "exposure": 0.175,
+  "missing": 15,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Wooltari.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Seoul Guide Medical",
+  "exposure": 0.2,
+  "missing": 14,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Seoul_Guide_Medical.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Banobagi",
+  "exposure": 0.2,
+  "missing": 14,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Banobagi.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "StyleKorean",
+  "exposure": 0.225,
+  "missing": 15,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/StyleKorean.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Jolse",
+  "exposure": 0.225,
+  "missing": 14,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Jolse.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "KKday",
+  "exposure": 0.25,
+  "missing": 15,
+  "q": 20,
+  "file": "한국_여행_투어/KKday.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "ID Hospital",
+  "exposure": 0.25,
+  "missing": 15,
+  "q": 20,
+  "file": "의료관광_성형_피부과/ID_Hospital.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "View Plastic Surgery",
+  "exposure": 0.25,
+  "missing": 14,
+  "q": 20,
+  "file": "의료관광_성형_피부과/View_Plastic_Surgery.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "Gangnam Unni",
+  "exposure": 0.25,
+  "missing": 14,
+  "q": 20,
+  "file": "의료관광_성형_피부과/Gangnam_Unni.html"
+ },
+ {
+  "cat": "한국어 어학연수·유학원",
+  "name": "Lexis Korea",
+  "exposure": 0.275,
+  "missing": 14,
+  "q": 20,
+  "file": "한국어_어학연수_유학원/Lexis_Korea.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "SnackFever",
+  "exposure": 0.275,
+  "missing": 14,
+  "q": 20,
+  "file": "K_푸드_해외_직구/SnackFever.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Stylevana",
+  "exposure": 0.275,
+  "missing": 13,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Stylevana.html"
+ },
+ {
+  "cat": "의료관광 (성형·피부과)",
+  "name": "JK Plastic Surgery",
+  "exposure": 0.3,
+  "missing": 14,
+  "q": 20,
+  "file": "의료관광_성형_피부과/JK_Plastic_Surgery.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Trazy",
+  "exposure": 0.3,
+  "missing": 13,
+  "q": 20,
+  "file": "한국_여행_투어/Trazy.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Gmarket Global",
+  "exposure": 0.3,
+  "missing": 12,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Gmarket_Global.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "Olive Young Global",
+  "exposure": 0.325,
+  "missing": 12,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/Olive_Young_Global.html"
+ },
+ {
+  "cat": "K-뷰티 해외 판매",
+  "name": "YesStyle",
+  "exposure": 0.35,
+  "missing": 12,
+  "q": 20,
+  "file": "K_뷰티_해외_판매/YesStyle.html"
+ },
+ {
+  "cat": "K-푸드 해외 직구",
+  "name": "Seoulbox",
+  "exposure": 0.35,
+  "missing": 12,
+  "q": 20,
+  "file": "K_푸드_해외_직구/Seoulbox.html"
+ },
+ {
+  "cat": "한국 여행·투어",
+  "name": "Klook",
+  "exposure": 0.475,
+  "missing": 9,
+  "q": 20,
+  "file": "한국_여행_투어/Klook.html"
+ }
+]
