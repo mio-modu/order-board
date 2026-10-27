@@ -196,50 +196,96 @@ const LOCAL_KEY = 'conscience_v1';
 const live = () => !!(SUPABASE.url && SUPABASE.key);
 
 const Store = {
-  async stats(){
+  /* 한 번의 요청으로 분포와 건수를 모두 받는다.
+     ① conscience_stats(mine) 집계 함수 — 기록이 100만 건이어도 응답은 1KB 미만.
+     ② 함수가 없으면 전체 경로를 받아 브라우저에서 직접 센다.
+        2만 건까지는 이쪽도 괜찮지만, 그 이상이면 방문자마다 누적 기록
+        전부를 내려받게 되어 전송량이 제곱으로 불어난다.
+     어느 쪽도 응답 헤더를 읽지 않는다. 헤더는 CORS 설정에 따라 가려질 수
+     있고, 가려지면 조용히 틀린 값이 나오기 때문이다. */
+  async fetchAll(mine){
     if(live()){
       try{
-        const h = {apikey:SUPABASE.key, Authorization:'Bearer '+SUPABASE.key};
-        const r = await fetch(`${SUPABASE.url}/rest/v1/${SUPABASE.table}?select=path`,
-          {headers:{...h, Prefer:'count=exact'}});
+        const r = await fetch(SUPABASE.url+'/rest/v1/rpc/conscience_stats', {
+          method:'POST',
+          headers:Object.assign(H(),{'Content-Type':'application/json'}),
+          body: JSON.stringify({mine: mine || null})
+        });
         if(r.ok){
-          const rows = await r.json();
-          return this._tally(rows.map(x=>x.path));
+          const j = await r.json();
+          if(j && typeof j.n === 'number'){
+            const t = this._fromAgg(j);
+            /* 방금 넣은 내 기록이 아직 안 보일 수 있다. 내가 답한 건 확실하므로
+               최소 1로 둔다. 지어내는 게 아니라 읽기 지연을 바로잡는 것이다. */
+            t.twin = mine ? Math.max(1, j.twin|0) : null;
+            t.same = mine ? Math.max(1, j.same|0) : null;
+            return t;
+          }
         }
       }catch(e){}
+      try{
+        const r = await fetch(SUPABASE.url+'/rest/v1/'+SUPABASE.table+'?select=path', {headers:H()});
+        if(r.ok) return this._tally((await r.json()).map(x=>x.path), mine);
+      }catch(e){}
     }
-    return this._tally(this._read().map(a=>a.path));
+    return this._tally(this._read().map(a=>a.path), mine);
   },
+
   async save(rec){
-    this._push(rec);                                  // 항상 로컬에도 남긴다
+    this._push(rec);
     if(live()){
       try{
-        await fetch(`${SUPABASE.url}/rest/v1/${SUPABASE.table}`, {
+        await fetch(SUPABASE.url+'/rest/v1/'+SUPABASE.table, {
           method:'POST',
-          headers:{apikey:SUPABASE.key, Authorization:'Bearer '+SUPABASE.key,
-                   'Content-Type':'application/json', Prefer:'return=minimal'},
-          body: JSON.stringify([{path:rec.path, hcq:rec.hcq, type:rec.type, at:new Date().toISOString()}])
+          headers:Object.assign(H(),{'Content-Type':'application/json', Prefer:'return=minimal'}),
+          body: JSON.stringify([{path:rec.path, hcq:rec.hcq, type:rec.type}])
         });
       }catch(e){}
     }
   },
+
   _read(){ try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]'); }catch(e){ return []; } },
   _push(r){ try{ const a=this._read(); a.push(r);
     localStorage.setItem(LOCAL_KEY, JSON.stringify(a.slice(-5000))); }catch(e){} },
-  /* path = "0a2-1b0-..." 형태. 질문마다 '선택지-이유'를 한 토막으로 붙인다. */
-  _tally(paths){
-    const grp = Q.map(q=>q.o.map(()=>0));             // 선택지별
-    const rsn = Q.map(q=>q.o.map(o=>o.r.map(()=>0))); // 이유별
+
+  _blank(){
+    return {grp: Q.map(q=>q.o.map(()=>0)),
+            rsn: Q.map(q=>q.o.map(o=>o.r.map(()=>0)))};
+  },
+
+  /* 집계 함수가 준 {n, q0..q4}. q0 = {"01":12, "10":7, ...} — 두 자리가 '선택지+이유' */
+  _fromAgg(j){
+    const {grp, rsn} = this._blank();
+    Q.forEach((_,i)=>{
+      const bk = j['q'+i] || {};
+      Object.keys(bk).forEach(k=>{
+        const g=+k[0], r=+k[1], c=+bk[k]||0;
+        if(grp[i] && grp[i][g]!==undefined) grp[i][g]+=c;
+        if(rsn[i] && rsn[i][g] && rsn[i][g][r]!==undefined) rsn[i][g][r]+=c;
+      });
+    });
+    return {n:j.n||0, grp, rsn, twin:null, same:null};
+  },
+
+  /* path = "01-10-02-21-13" */
+  _tally(paths, mine){
+    const {grp, rsn} = this._blank();
+    const go = p => String(p).split('-').map(x=>x[0]).join('');
+    const mg = mine ? go(mine) : null;
+    let twin=0, same=0;
     paths.forEach(p=>{
       String(p||'').split('-').forEach((seg,i)=>{
         const g=+seg[0], r=+seg[1];
-        if(grp[i]?.[g]!==undefined) grp[i][g]++;
-        if(rsn[i]?.[g]?.[r]!==undefined) rsn[i][g][r]++;
+        if(grp[i] && grp[i][g]!==undefined) grp[i][g]++;
+        if(rsn[i] && rsn[i][g] && rsn[i][g][r]!==undefined) rsn[i][g][r]++;
       });
+      if(mine){ if(p===mine) twin++; if(go(p)===mg) same++; }
     });
-    return {n:paths.length, grp, rsn, paths};
+    return {n:paths.length, grp, rsn,
+            twin: mine?Math.max(1,twin):null, same: mine?Math.max(1,same):null};
   }
 };
+const H = () => ({apikey:SUPABASE.key, Authorization:'Bearer '+SUPABASE.key});
 
 /* ── 질문 ───────────────────────────────────────────────────
    o = 선택지, r = 그 선택을 한 '이유'.  w = 이타성 가중치(0~100).
@@ -396,12 +442,12 @@ function renderQ(){
 /* ── 계산 ── */
 function score(){
   const hcq = Math.round(S.picks.reduce((a,[g,r],i)=> a + Q[i].o[g].r[r].w, 0) / Q.length);
-  const st = S.stats || {n:0,grp:[],rsn:[],paths:[]};
+  const st = S.stats || {n:0,grp:[],rsn:[]};
   const N = st.n||0;
   let rq=null, twin=null, sameChoice=null;
   if(N>=30){
-    /* 희귀함 = (선택지가 드문 정도 × 0.45) + (이유가 드문 정도 × 0.55)
-       같은 결론이어도 이유가 다르면 다른 자리다. 그래서 이유에 더 무게를 둔다. */
+    /* 희귀함 = 선택지 희귀도 45% + 이유 희귀도 55%.
+       같은 결론이어도 이유가 다르면 다른 자리다. */
     let sum=0;
     S.picks.forEach(([g,r],i)=>{
       const gr=st.grp[i]||[], gt=gr.reduce((a,b)=>a+b,0)||1;
@@ -409,13 +455,11 @@ function score(){
       sum += 0.45*(1-((gr[g]||0)/gt)) + 0.55*(1-((rr[r]||0)/rt));
     });
     rq = Math.round(sum/Q.length*100);
-    const mine = path();
-    twin = st.paths.filter(p=>p===mine).length;
-    const g0 = S.picks.map(p=>p[0]).join('');
-    sameChoice = st.paths.filter(p=>String(p).split('-').map(x=>x[0]).join('')===g0).length;
+    twin = st.twin; sameChoice = st.same;
   }
-  return {hcq, rq, N, twin, sameChoice, t:TYPES.find(t=>t.test(hcq, rq??0))};
+  return {hcq, rq, N, twin, sameChoice, t:TYPES.find(t=>t.test(hcq, rq==null?0:rq))};
 }
+
 const path = () => S.picks.map(([g,r])=>`${g}${r}`).join('-');
 
 /* ── 분포 지도 ── */
@@ -505,7 +549,7 @@ async function makeCard(res){
 
   /* 희귀 문장 */
   c.textAlign='center';
-  if(res.rq!==null){
+  if(res.rq!==null && res.twin!==null){
     c.fillStyle='rgba(20,16,32,.82)'; c.fillRect(70,812,940,180);
     c.strokeStyle='rgba(142,123,245,.34)'; c.lineWidth=2; c.strokeRect(70,812,940,180);
     c.font='700 40px "Nanum Myeongjo", serif'; c.fillStyle='#A99AF8';
@@ -521,7 +565,7 @@ async function makeCard(res){
   sc.addColorStop(0,'rgba(7,9,11,0)'); sc.addColorStop(.45,'rgba(7,9,11,.82)'); sc.addColorStop(1,'rgba(7,9,11,.94)');
   c.fillStyle=sc; c.fillRect(0,1000,W,H-1000);
 
-  if(res.rq!==null && res.sameChoice>res.twin){
+  if(res.rq!==null && res.twin!==null && res.sameChoice>res.twin){
     c.font='300 27px "Noto Sans KR", sans-serif'; c.fillStyle='#8A99A6';
     c.fillText(`같은 선택을 한 사람은 ${res.sameChoice}명.`, W/2, 1066);
     c.fillText(`같은 이유로 그렇게 한 사람은 ${res.twin}명.`, W/2, 1106);
@@ -551,7 +595,7 @@ function renderResult(){
 
       <canvas id="cv"></canvas>
 
-      ${rq!==null?`<div class="rare-line">
+      ${(rq!==null && twin!==null)?`<div class="rare-line">
         <div class="big">${N.toLocaleString()}명 중<br>당신과 똑같이 답한 사람은<br>${twin}명입니다</div>
         <div class="sm">${((twin/Math.max(N,1))*100).toFixed(1)}% · 선택과 이유까지 전부 일치</div>
         ${sameChoice>twin?`<div class="sm2">같은 선택을 한 사람은 ${sameChoice}명입니다.<br>같은 이유로 그렇게 한 사람이 ${twin}명입니다.</div>`:''}
@@ -617,7 +661,7 @@ async function saveFile(blob, name){
 
 function shareText(r){
   return `나의 양심 좌표: ${r.t.ko} (${r.t.en})\n따뜻함 ${r.hcq}`
-    + (r.rq!==null?` · 희귀함 ${r.rq}\n${r.N.toLocaleString()}명 중 나와 똑같이 답한 사람 ${r.twin}명`:'')
+    + (r.rq!==null&&r.twin!==null?` · 희귀함 ${r.rq}\n${r.N.toLocaleString()}명 중 나와 똑같이 답한 사람 ${r.twin}명`:'')
     + `\n\n다섯 개의 답 없는 질문. 당신은 어디에 서 있습니까.\n${location.href}`;
 }
 async function copyText(txt){
@@ -630,14 +674,15 @@ async function copyText(txt){
 
 async function finish(){
   const pre = score();
-  await Store.save({path:path(), hcq:pre.hcq, type:pre.t.id});
-  S.stats = await Store.stats();
+  const mine = path();
+  await Store.save({path:mine, hcq:pre.hcq, type:pre.t.id});
+  S.stats = await Store.fetchAll(mine);
   $('#nCount').textContent = (S.stats.n||0).toLocaleString();
   renderResult();
   scrollTo({top:0,behavior:'smooth'});
 }
 async function boot(){
-  S.stats = await Store.stats();
+  S.stats = await Store.fetchAll(null);
   $('#nCount').textContent = (S.stats.n||0).toLocaleString();
   renderQ();
 }

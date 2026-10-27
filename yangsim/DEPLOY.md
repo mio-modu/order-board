@@ -45,6 +45,7 @@ Supabase 없이 배포하면 응답이 **각자의 브라우저에만** 저장�
 아래를 통째로 붙여넣고 오른쪽 아래 **Run**.
 
 ```sql
+-- 1) 기록을 담을 표
 create table if not exists conscience_logs (
   id   bigint generated always as identity primary key,
   path text not null,
@@ -53,6 +54,7 @@ create table if not exists conscience_logs (
   at   timestamptz default now()
 );
 
+-- 2) 보안을 켜고, 넣기와 읽기만 연다 (수정·삭제는 아무에게도 열지 않는다)
 alter table conscience_logs enable row level security;
 
 drop policy if exists "anyone can insert" on conscience_logs;
@@ -65,6 +67,37 @@ create policy "anyone can read"
   on conscience_logs for select to anon using (true);
 
 create index if not exists conscience_logs_path_idx on conscience_logs (path);
+
+-- 3) 집계 함수.
+--    이게 있으면 방문자는 1KB만 받는다. 없으면 누적 기록을 통째로 받게 되어
+--    사람이 늘수록 전송량이 제곱으로 불어나고 무료 한도가 2만 명쯤에서 끝난다.
+--    path 는 "01-10-02-21-13" 꼴로 길이가 고정이라 자리를 그대로 잘라 쓴다.
+--    (질문 수나 형식을 바꾸면 아래 substr 자리도 같이 바꿔야 한다)
+create or replace function conscience_stats(mine text default null)
+returns json
+language sql
+stable
+as $$
+  select json_build_object(
+    'n',  (select count(*) from conscience_logs),
+    'q0', (select json_object_agg(k,c) from (select substr(path,1,2)  k, count(*) c from conscience_logs group by 1) t),
+    'q1', (select json_object_agg(k,c) from (select substr(path,4,2)  k, count(*) c from conscience_logs group by 1) t),
+    'q2', (select json_object_agg(k,c) from (select substr(path,7,2)  k, count(*) c from conscience_logs group by 1) t),
+    'q3', (select json_object_agg(k,c) from (select substr(path,10,2) k, count(*) c from conscience_logs group by 1) t),
+    'q4', (select json_object_agg(k,c) from (select substr(path,13,2) k, count(*) c from conscience_logs group by 1) t),
+    'twin', (select count(*) from conscience_logs
+               where mine is not null and path = mine),
+    'same', (select count(*) from conscience_logs
+               where mine is not null
+                 and substr(path,1,1)  = substr(mine,1,1)
+                 and substr(path,4,1)  = substr(mine,4,1)
+                 and substr(path,7,1)  = substr(mine,7,1)
+                 and substr(path,10,1) = substr(mine,10,1)
+                 and substr(path,13,1) = substr(mine,13,1))
+  );
+$$;
+
+grant execute on function conscience_stats(text) to anon;
 ```
 
 `Success. No rows returned` 가 뜨면 된 겁니다.
@@ -74,11 +107,16 @@ create index if not exists conscience_logs_path_idx on conscience_logs (path);
 
 **무엇을 한 건지:**
 - 기록을 담을 표를 만들고
-- 보안(RLS)을 켠 다음
-- **넣기(insert)** 와 **읽기(select)** 만 열었습니다.
-  수정과 삭제는 아무에게도 열지 않았으므로, 남의 기록을 건드릴 수 없습니다.
-- 읽기를 연 이유는 **희귀함(RQ) 계산 때문**입니다.
-  내 답이 얼마나 드문지 알려면 전체 분포를 봐야 합니다.
+- 보안(RLS)을 켠 다음 **넣기(insert)** 와 **읽기(select)** 만 열었습니다.
+  수정과 삭제는 아무에게도 열지 않았으므로 남의 기록을 건드릴 수 없습니다.
+- **집계 함수**를 만들었습니다. 방문자는 전체 기록이 아니라
+  이 함수가 계산해 준 요약만 받습니다.
+
+> **집계 함수가 중요한 이유.** 이게 없으면 방문자 한 명이 들어올 때마다
+> 누적 기록 **전부**를 내려받습니다. 기록이 10만 건이면 한 명당 2MB쯤 되고,
+> 무료 전송량 5GB가 **2만 명쯤에서 바닥납니다.**
+> 함수가 있으면 기록이 100만 건이어도 한 명당 1KB 미만입니다.
+> 사이트는 함수가 없어도 동작하지만, 그때는 위 한계를 그대로 맞습니다.
 
 ### 1-3. 키 두 개 복사
 
@@ -192,13 +230,23 @@ const SUPABASE = {
 
 ## 나중에 알려주셔야 할 것
 
-### 응답이 2만 건을 넘으면
+### 집계 함수가 제대로 들어갔는지 확인
 
-지금 구조는 희귀함(RQ)을 계산하려고 **전체 기록을 받아와서** 셉니다.
-2만 건까지는 문제없지만, 그 이상이면 방문자마다 받는 양이 커져 느려집니다.
+SQL Editor에서 이것만 따로 실행해 보세요.
 
-그때 집계 함수로 바꾸면 10만, 100만까지 그대로 갑니다.
-**N이 2만 가까워지면 알려주세요.** 10분이면 바꿉니다.
+```sql
+select conscience_stats();
+```
+
+`{"n": 0, "q0": null, ...}` 같은 JSON이 나오면 된 겁니다.
+**오류가 나면 사이트는 돌아가지만 전송량 한계를 그대로 맞습니다.**
+오류 메시지를 알려주세요.
+
+### 질문을 고치거나 늘리면
+
+집계 함수의 `substr(path, N, 2)` 자리들이 질문 개수와 묶여 있습니다.
+질문을 바꾸시면 **함수도 같이 바꿔야 합니다.** 저한테 말씀하시면 됩니다.
+안 바꾸면 사이트는 조용히 두 번째 경로(전체 내려받기)로 떨어집니다.
 
 ### 무료 플랜 일시정지
 
