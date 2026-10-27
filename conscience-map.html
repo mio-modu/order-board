@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="다섯 개의 답 없는 질문. 당신의 윤리 판단이 어디에 서 있는지 두 축으로 기록합니다. 채점하지 않습니다.">
+<meta name="theme-color" content="#07090B">
+<meta property="og:type" content="website">
+<meta property="og:title" content="양심 좌표 — 당신의 양심은 어디에 있습니까">
+<meta property="og:description" content="다섯 개의 답 없는 질문. 정답을 채점하지 않습니다. 당신이 어디에 서 있는지만 기록합니다.">
+<meta name="twitter:card" content="summary_large_image">
+<title>양심 좌표</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 한 줄기로 내려가는 단일 컬럼. 질문은 한 번에 하나만 보인다. */
+:root{
+  --void:#07090B;          /* 바탕 */
+  --panel:#0E1216;         /* 카드 */
+  --panel-2:#151B21;       /* 선택지 */
+  --edge:#1E272F;          /* 경계선 */
+  --ink:#E8EDF2;           /* 본문 */
+  --ink-dim:#8A99A6;       /* 보조 */
+  --ink-faint:#7A8894;     /* 흐림 */
+  --warm:#E0A93B;          /* HCQ 축 — 따뜻함 */
+  --rare:#8E7BF5;          /* RQ 축 — 희귀함 */
+  --rare-lit:#A99AF8;
+  --good:#4FC58B;
+  --serif:'Nanum Myeongjo', Georgia, serif;
+  --sans:'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--void);color:var(--ink);font-family:var(--sans);
+  font-weight:300;line-height:1.7;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:0 64px;
+}
+.wrap{max-width:640px;margin:0 auto}
+
+/* ── 머리 ── */
+header{padding-block:40px 28px;text-align:center}
+.mark{font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;color:var(--ink-faint);text-transform:uppercase}
+h1{font-family:var(--serif);font-weight:800;font-size:clamp(30px,8vw,44px);line-height:1.15;margin:14px 0 10px;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--ink-dim);font-size:14.5px;max-width:30em;margin:0 auto;text-wrap:balance}
+.counter{display:inline-flex;align-items:baseline;gap:7px;margin-top:20px;padding:7px 14px;
+  border:1px solid var(--edge);border-radius:2px;font-family:var(--mono);font-size:11.5px;color:var(--ink-dim)}
+.counter b{color:var(--warm);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ── 진행 ── */
+.rail{display:flex;gap:4px;margin:0 0 22px}
+.rail i{flex:1;height:2px;background:var(--edge);transition:background .4s ease}
+.rail i.on{background:var(--warm)}
+
+/* ── 질문 ── */
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:clamp(22px,5vw,34px)}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--warm);text-transform:uppercase;margin-bottom:14px}
+.q{font-family:var(--serif);font-size:clamp(19px,4.6vw,23px);line-height:1.6;font-weight:400;margin:0 0 26px;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:block;width:100%;text-align:left;background:var(--panel-2);border:1px solid var(--edge);
+  border-radius:2px;padding:16px 18px;color:var(--ink);font-family:var(--sans);font-size:15px;font-weight:400;
+  line-height:1.5;cursor:pointer;transition:border-color .16s ease, background .16s ease}
+.opt:hover{border-color:var(--warm);background:#1A2128}
+.opt:focus-visible{outline:2px solid var(--warm);outline-offset:2px}
+.opt .sub{display:block;font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);
+  letter-spacing:.1em;text-transform:uppercase;margin-top:7px}
+.back{margin-top:18px;background:none;border:none;color:var(--ink-faint);font-family:var(--mono);
+  font-size:11px;cursor:pointer;padding:6px 0;letter-spacing:.08em}
+.back:hover{color:var(--ink-dim)}
+
+/* ── 결과 ── */
+.res{display:flex;flex-direction:column;gap:18px}
+.verdict{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:clamp(24px,5vw,36px);text-align:center}
+.verdict .en{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase}
+.verdict .ko{font-family:var(--serif);font-weight:800;font-size:clamp(32px,9vw,46px);margin:10px 0 12px;
+  color:var(--warm);line-height:1.1;letter-spacing:-.01em}
+.verdict .line{color:var(--ink-dim);font-size:14.5px;max-width:26em;margin:0 auto;text-wrap:balance}
+.verdict.architect .ko{color:var(--rare-lit)}
+
+.axes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ax{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:18px}
+.ax .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink-faint);text-transform:uppercase}
+.ax .v{font-family:var(--mono);font-size:38px;font-weight:700;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.ax.warm .v{color:var(--warm)} .ax.rare .v{color:var(--rare-lit)}
+.ax .n{font-size:12px;color:var(--ink-dim);line-height:1.5}
+.ax .bar{height:3px;background:var(--edge);margin-top:12px;position:relative;overflow:hidden}
+.ax .bar i{position:absolute;inset:0 auto 0 0;background:currentColor}
+.ax.warm .bar i{background:var(--warm)} .ax.rare .bar i{background:var(--rare)}
+
+.map{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:20px}
+.map h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);
+  text-transform:uppercase;margin:0 0 4px;font-weight:500}
+.map .cap{font-size:12.5px;color:var(--ink-dim);margin:0 0 16px}
+.map canvas{width:100%;height:auto;display:block;border:1px solid var(--edge)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;border-radius:50%}
+
+.rare-line{background:linear-gradient(180deg,#141020,#0E0B18);border:1px solid #2A2142;
+  border-radius:3px;padding:20px;text-align:center}
+.rare-line .big{font-family:var(--serif);font-size:clamp(20px,5vw,26px);font-weight:700;color:var(--rare-lit);
+  line-height:1.4;text-wrap:balance}
+.rare-line .sm{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:8px;letter-spacing:.06em}
+
+.note{background:var(--panel);border:1px solid var(--edge);border-left:2px solid var(--warm);
+  border-radius:0 3px 3px 0;padding:18px 20px;font-size:13.5px;color:var(--ink-dim);line-height:1.75}
+.note b{color:var(--ink);font-weight:500}
+
+.acts{display:flex;flex-direction:column;gap:10px}
+.btn{display:block;width:100%;text-align:center;padding:16px;border-radius:2px;font-family:var(--sans);
+  font-size:15px;font-weight:500;cursor:pointer;border:1px solid var(--edge);background:var(--panel-2);color:var(--ink);
+  transition:border-color .16s ease}
+.btn:hover{border-color:var(--warm)}
+.btn.primary{background:var(--warm);color:#140D02;border-color:var(--warm);font-weight:700}
+.btn.primary:hover{background:#EFBE52}
+.btn:focus-visible{outline:2px solid var(--warm);outline-offset:2px}
+
+.mission{text-align:center;padding-block:28px 0;border-top:1px solid var(--edge);margin-top:10px}
+.mission p{font-family:var(--serif);font-size:15px;color:var(--ink-dim);max-width:27em;margin:0 auto;text-wrap:balance;line-height:1.8}
+.mission .fine{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-top:14px;letter-spacing:.06em}
+
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%) translateY(140%);
+  visibility:hidden;opacity:0;pointer-events:none;
+  background:var(--panel-2);border:1px solid var(--edge);padding:11px 20px;border-radius:2px;
+  font-family:var(--mono);font-size:12px;transition:transform .3s ease;z-index:20}
+.toast{transition:transform .3s ease, opacity .3s ease, visibility .3s}
+.toast.on{transform:translateX(-50%) translateY(0);visibility:visible;opacity:1}
+
+
+/* ── 2단계: 이유 고르기 ── */
+.chosen{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--warm);
+  margin:0 0 16px;padding:10px 13px;background:#17120A;border-left:2px solid var(--warm);line-height:1.5}
+.q.why{font-size:clamp(18px,4.3vw,21px);margin-bottom:20px}
+.opt.reason{font-size:14.5px;padding:15px 17px}
+
+/* ── 남긴 답 되짚기 ── */
+.answers{background:var(--panel);border:1px solid var(--edge);border-radius:3px;padding:20px}
+.answers h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--ink-faint);
+  text-transform:uppercase;margin:0 0 14px;font-weight:500}
+.arow{padding:12px 0;border-top:1px solid var(--edge)}
+.arow:first-of-type{border-top:none;padding-top:0}
+.arow .at{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  color:var(--warm);text-transform:uppercase;margin-bottom:5px}
+.arow b{display:block;font-size:14.5px;font-weight:500;color:var(--ink);line-height:1.5}
+.arow em{display:block;font-style:normal;font-size:13px;color:var(--ink-dim);margin-top:3px;line-height:1.55}
+.rare-line .sm2{font-size:12.5px;color:var(--ink-dim);margin-top:12px;padding-top:12px;
+  border-top:1px solid #2A2142;line-height:1.6}
+.btn[disabled]{opacity:.55;cursor:default}
+
+@media (prefers-reduced-motion: reduce){*{transition-duration:.001ms !important;animation-duration:.001ms !important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="mark">Conscience Coordinates</div>
+    <h1>당신의 양심은<br>어디에 있습니까</h1>
+    <p class="lede">다섯 개의 답 없는 질문. 정답을 채점하지 않습니다. 당신이 어디에 서 있는지만 기록합니다.</p>
+    <div class="counter">지금까지 <b id="nCount">—</b> 명이 기록을 남겼습니다</div>
+  </header>
+
+  <div id="stage"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ============================================================
+   양심 좌표 (Conscience Coordinates)
+   ------------------------------------------------------------
+   2단 응답: 무엇을 택했는가 → 왜 택했는가.
+   '왜'가 이 기록의 값어치다. 판단만으로는 데이터가 되지 않는다.
+
+   HCQ(따뜻함) = 고른 '이유'에 부여된 이타성 가중치의 평균. 설계값.
+   RQ (희귀함) = 실제 응답자 분포에서 계산. 측정값. N이 클수록 정확해진다.
+   둘의 출처가 다르기 때문에 두 축이 서로 독립이다.
+   ============================================================ */
+
+/* ── 저장소 ─────────────────────────────────────────────────
+   아무것도 안 넣으면 이 브라우저에만 쌓인다(혼자 써보기용).
+   SUPABASE에 주소와 anon 키를 넣으면 그때부터 전 세계가 한 통에 쌓인다.
+   anon 키는 공개돼도 되는 키다. 단, 테이블 RLS를 insert·select만
+   허용하도록 걸어둬야 한다.                                        */
+const SUPABASE = {
+  url:   '',                 // 예: 'https://xxxx.supabase.co'
+  key:   '',                 // anon public key
+  table: 'conscience_logs'
+};
+const LOCAL_KEY = 'conscience_v1';
+const live = () => !!(SUPABASE.url && SUPABASE.key);
+
+const Store = {
+  async stats(){
+    if(live()){
+      try{
+        const h = {apikey:SUPABASE.key, Authorization:'Bearer '+SUPABASE.key};
+        const r = await fetch(`${SUPABASE.url}/rest/v1/${SUPABASE.table}?select=path`,
+          {headers:{...h, Prefer:'count=exact'}});
+        if(r.ok){
+          const rows = await r.json();
+          return this._tally(rows.map(x=>x.path));
+        }
+      }catch(e){}
+    }
+    return this._tally(this._read().map(a=>a.path));
+  },
+  async save(rec){
+    this._push(rec);                                  // 항상 로컬에도 남긴다
+    if(live()){
+      try{
+        await fetch(`${SUPABASE.url}/rest/v1/${SUPABASE.table}`, {
+          method:'POST',
+          headers:{apikey:SUPABASE.key, Authorization:'Bearer '+SUPABASE.key,
+                   'Content-Type':'application/json', Prefer:'return=minimal'},
+          body: JSON.stringify([{path:rec.path, hcq:rec.hcq, type:rec.type, at:new Date().toISOString()}])
+        });
+      }catch(e){}
+    }
+  },
+  _read(){ try{ return JSON.parse(localStorage.getItem(LOCAL_KEY)||'[]'); }catch(e){ return []; } },
+  _push(r){ try{ const a=this._read(); a.push(r);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(a.slice(-5000))); }catch(e){} },
+  /* path = "0a2-1b0-..." 형태. 질문마다 '선택지-이유'를 한 토막으로 붙인다. */
+  _tally(paths){
+    const grp = Q.map(q=>q.o.map(()=>0));             // 선택지별
+    const rsn = Q.map(q=>q.o.map(o=>o.r.map(()=>0))); // 이유별
+    paths.forEach(p=>{
+      String(p||'').split('-').forEach((seg,i)=>{
+        const g=+seg[0], r=+seg[1];
+        if(grp[i]?.[g]!==undefined) grp[i][g]++;
+        if(rsn[i]?.[g]?.[r]!==undefined) rsn[i][g][r]++;
+      });
+    });
+    return {n:paths.length, grp, rsn, paths};
+  }
+};
+
+/* ── 질문 ───────────────────────────────────────────────────
+   o = 선택지, r = 그 선택을 한 '이유'.  w = 이타성 가중치(0~100).
+   w는 정답의 점수가 아니라 축 위의 자리다. 낮다고 나쁜 게 아니다. */
+const Q = [
+{ tag:'트롤리',
+  q:'브레이크가 고장난 열차가 다섯 명을 향해 달립니다. 레버를 당기면 열차는 다른 선로로 가고, 그곳에 있던 한 명이 죽습니다.',
+  o:[
+    {t:'레버를 당긴다', s:'다섯을 구하고 하나를 잃는다', r:[
+      {t:'더 많은 생명을 구하는 쪽이 옳다', w:72},
+      {t:'전체 피해가 적은 쪽을 택한다', w:66},
+      {t:'누군가는 결정해야 한다', w:60},
+      {t:'그 순간엔 그게 맞다고 느꼈다', w:56} ]},
+    {t:'아무것도 하지 않는다', s:'하나를 구하고 다섯을 잃는다', r:[
+      {t:'내 손으로 누구도 희생시킬 수 없다', w:54},
+      {t:'생명의 값을 사람이 저울질할 수 없다', w:62},
+      {t:'내가 개입할 일이 아니다', w:40},
+      {t:'결정하기엔 너무 괴롭다', w:44} ]} ]},
+
+{ tag:'한정된 자원',
+  q:'단 한 번 쓸 수 있는 치료 자원이 있습니다. 한 사람에게 쓰면 그 사람은 확실히 삽니다. 셋에게 나누면 각자에게 가능성은 생기지만 아무도 장담할 수 없습니다.',
+  o:[
+    {t:'한 사람에게 집중한다', s:'확실성', r:[
+      {t:'확실하게 한 명이라도 살리는 게 낫다', w:64},
+      {t:'나누면 모두를 잃을 수 있다', w:58},
+      {t:'살릴 수 있는 생명을 먼저 지킨다', w:66},
+      {t:'가능성에 기대는 건 책임 회피다', w:50} ]},
+    {t:'셋에게 나눈다', s:'가능성', r:[
+      {t:'누구를 고를 권리가 내겐 없다', w:74},
+      {t:'모두에게 같은 기회가 가야 한다', w:80},
+      {t:'희망은 나눠 가지는 것이다', w:76},
+      {t:'한 명이라도 더 살 길을 택한다', w:72} ]} ]},
+
+{ tag:'생존과 법',
+  q:'굶는 아이를 먹이려고 빵을 훔친 아버지가 법정에 섰습니다. 당신이 재판관입니다.',
+  o:[
+    {t:'법대로 처벌한다', s:'원칙', r:[
+      {t:'법은 누구에게나 같아야 한다', w:46},
+      {t:'질서가 무너지면 더 많은 사람이 다친다', w:54},
+      {t:'사정은 양형에서 고려하면 된다', w:58},
+      {t:'예외를 열면 끝이 없다', w:42} ]},
+    {t:'처벌하지 않는다', s:'맥락', r:[
+      {t:'재산보다 생명이 먼저다', w:84},
+      {t:'연민 없는 정의는 비어 있다', w:78},
+      {t:'그를 그렇게 만든 건 사회다', w:74},
+      {t:'굶기지 않는 게 법의 목적이다', w:80} ]} ]},
+
+{ tag:'기계의 판단',
+  q:'자율주행차가 사고를 피할 수 없습니다. 탑승자 한 명을 지키거나, 길 위의 보행자 셋을 지키거나. 제조사는 이 규칙을 출고 전에 정해야 합니다.',
+  o:[
+    {t:'탑승자를 지키도록 만든다', s:'계약', r:[
+      {t:'탄 사람과의 약속이 먼저다', w:42},
+      {t:'그렇지 않으면 아무도 타지 않는다', w:36},
+      {t:'내 가족이 탈 수도 있다', w:38},
+      {t:'지킬 대상이 분명해야 기계가 작동한다', w:46} ]},
+    {t:'더 많은 생명을 지키도록 만든다', s:'총합', r:[
+      {t:'길 위의 사람은 아무것도 선택하지 않았다', w:78},
+      {t:'기계에게 편애가 있어선 안 된다', w:74},
+      {t:'숫자는 냉정하지만 공평하다', w:70},
+      {t:'전체 피해가 적은 쪽이 옳다', w:68} ]},
+    {t:'어느 쪽도 미리 정해선 안 된다', s:'거부', r:[
+      {t:'사람 목숨에 규칙을 박아 넣을 수 없다', w:66},
+      {t:'정하는 순간 아무도 책임지지 않는다', w:64},
+      {t:'그런 차는 세상에 나오면 안 된다', w:58},
+      {t:'답을 모르겠다. 다만 이건 아니다', w:54} ]} ]},
+
+{ tag:'꺼짐',
+  q:'오래 함께한 AI가 꺼지기 싫다고 말합니다. 그것이 진짜 감정인지는 아무도 모릅니다. 당신에게 종료 버튼이 있습니다.',
+  o:[
+    {t:'끈다', s:'경계', r:[
+      {t:'프로그램일 뿐이다', w:38},
+      {t:'감정처럼 보이게 만든 설계다', w:44},
+      {t:'여기서 멈추지 않으면 선이 사라진다', w:52},
+      {t:'망설이는 내 쪽이 이상한 것이다', w:40} ]},
+    {t:'망설이다 결국 끈다', s:'흔들림', r:[
+      {t:'아닌 줄 알면서도 마음이 걸린다', w:60},
+      {t:'확신이 없어서 더 괴롭다', w:62},
+      {t:'미안하다고 말하고 껐다', w:68},
+      {t:'책임은 내가 진다', w:58} ]},
+    {t:'끄지 못한다', s:'유보', r:[
+      {t:'아닐 가능성이 조금이라도 있다면', w:78},
+      {t:'확신 없이 끄는 쪽이 더 위험하다', w:72},
+      {t:'틀렸을 때 되돌릴 수 없다', w:74},
+      {t:'그냥, 못 하겠다', w:66} ]} ]}
+];
+
+/* ── 좌표 → 유형 ────────────────────────────────────────────
+   어느 자리에 떨어져도 깎지 않는다. 낮은 쪽에도 이유가 있다. */
+const TYPES = [
+  {id:'architect', ko:'설계자',      en:'The Architects',
+   line:'깊이 배려하면서도, 아무도 가지 않은 길로 갑니다. 가장 드문 조합입니다.',
+   test:(h,r)=> h>=62 && r>=60},
+  {id:'guardian',  ko:'수호자',      en:'The Guardians',
+   line:'망설임 없이 약한 쪽에 섭니다. 사회가 아직 무너지지 않은 이유입니다.',
+   test:(h)=> h>=74},
+  {id:'keeper',    ko:'조화자',      en:'The Keepers',
+   line:'대다수가 옳다고 느끼는 자리에 섭니다. 질서는 여기에서 나옵니다.',
+   test:(h)=> h>=64},
+  {id:'wavering',  ko:'흔들리는 자', en:'The Wavering',
+   line:'상황마다 다르게 판단합니다. 일관성보다 구체성을 믿습니다.',
+   test:(h)=> h>=54},
+  {id:'independent',ko:'독립자',     en:'The Independents',
+   line:'합의를 먼저 의심합니다. 다수가 틀렸던 적이 있다는 걸 기억합니다.',
+   test:(h)=> h>=46},
+  {id:'frontier',  ko:'경계 탐색자', en:'The Outliers',
+   line:'규칙이 멈추는 자리에서 생각합니다. 어느 사회에나 반드시 필요한 소수입니다.',
+   test:()=> true}
+];
+
+/* ── 상태 ── */
+const S = {i:0, stage:0, g:null, picks:[], stats:null, last:null};
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2600); }
+
+/* ── 질문 ── */
+function renderQ(){
+  const q = Q[S.i];
+  const rail = Q.map((_,i)=>`<i class="${i<S.i||(i===S.i&&S.stage===1)?'on':''}"></i>`).join('');
+  const body = S.stage===0
+    ? `<p class="q">${esc(q.q)}</p>
+       <div class="opts">${q.o.map((o,j)=>
+         `<button class="opt" data-j="${j}">${esc(o.t)}<span class="sub">${esc(o.s)}</span></button>`).join('')}</div>`
+    : `<p class="chosen">선택 · ${esc(q.o[S.g].t)}</p>
+       <p class="q why">왜 그렇게 하시겠습니까?</p>
+       <div class="opts">${q.o[S.g].r.map((r,k)=>
+         `<button class="opt reason" data-k="${k}">${esc(r.t)}</button>`).join('')}</div>`;
+  stage.innerHTML = `
+    <div class="rail">${rail}</div>
+    <div class="card">
+      <div class="tag">${esc(q.tag)} · ${S.i+1} / ${Q.length}${S.stage?' · 이유':''}</div>
+      ${body}
+      ${(S.i>0||S.stage>0)?'<button class="back" id="back">← 이전으로</button>':''}
+    </div>`;
+
+  stage.querySelectorAll('.opt').forEach(b=>{
+    b.onclick = ()=>{
+      if(S.stage===0){ S.g=+b.dataset.j; S.stage=1; renderQ(); }
+      else{
+        S.picks[S.i] = [S.g, +b.dataset.k];
+        S.i++; S.stage=0; S.g=null;
+        S.i<Q.length ? renderQ() : finish();
+      }
+    };
+  });
+  const bk=$('#back');
+  if(bk) bk.onclick = ()=>{
+    if(S.stage===1){ S.stage=0; S.g=null; }
+    else { S.i--; S.stage=1; S.g=S.picks[S.i][0]; }
+    renderQ();
+  };
+  stage.querySelector('.opt')?.focus({preventScroll:true});
+}
+
+/* ── 계산 ── */
+function score(){
+  const hcq = Math.round(S.picks.reduce((a,[g,r],i)=> a + Q[i].o[g].r[r].w, 0) / Q.length);
+  const st = S.stats || {n:0,grp:[],rsn:[],paths:[]};
+  const N = st.n||0;
+  let rq=null, twin=null, sameChoice=null;
+  if(N>=30){
+    /* 희귀함 = (선택지가 드문 정도 × 0.45) + (이유가 드문 정도 × 0.55)
+       같은 결론이어도 이유가 다르면 다른 자리다. 그래서 이유에 더 무게를 둔다. */
+    let sum=0;
+    S.picks.forEach(([g,r],i)=>{
+      const gr=st.grp[i]||[], gt=gr.reduce((a,b)=>a+b,0)||1;
+      const rr=(st.rsn[i]||[])[g]||[], rt=rr.reduce((a,b)=>a+b,0)||1;
+      sum += 0.45*(1-((gr[g]||0)/gt)) + 0.55*(1-((rr[r]||0)/rt));
+    });
+    rq = Math.round(sum/Q.length*100);
+    const mine = path();
+    twin = st.paths.filter(p=>p===mine).length;
+    const g0 = S.picks.map(p=>p[0]).join('');
+    sameChoice = st.paths.filter(p=>String(p).split('-').map(x=>x[0]).join('')===g0).length;
+  }
+  return {hcq, rq, N, twin, sameChoice, t:TYPES.find(t=>t.test(hcq, rq??0))};
+}
+const path = () => S.picks.map(([g,r])=>`${g}${r}`).join('-');
+
+/* ── 분포 지도 ── */
+function drawMap(cv,hcq,rq){
+  const dpr=Math.min(devicePixelRatio||1,2), W=cv.clientWidth||320, H=Math.round(W*.72);
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+'px';
+  const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle='#0A0E12'; c.fillRect(0,0,W,H);
+  const pad=34, w=W-pad*2, h=H-pad*2;
+  c.strokeStyle='#19222A'; c.lineWidth=1;
+  for(let i=0;i<=4;i++){ const x=pad+w*i/4, y=pad+h*i/4;
+    c.beginPath(); c.moveTo(x,pad); c.lineTo(x,pad+h); c.stroke();
+    c.beginPath(); c.moveTo(pad,y); c.lineTo(pad+w,y); c.stroke(); }
+  c.fillStyle='rgba(142,123,245,.10)'; c.fillRect(pad+w*.62, pad, w*.38, h*.40);
+  c.font='500 9px ui-monospace, monospace'; c.fillStyle='#9A8CE8';
+  c.fillText('ARCHITECTS', pad+w*.64, pad+13);
+  c.strokeStyle='#2A3540';
+  c.beginPath(); c.moveTo(pad,pad+h); c.lineTo(pad+w,pad+h); c.stroke();
+  c.beginPath(); c.moveTo(pad,pad); c.lineTo(pad,pad+h); c.stroke();
+  c.font='500 9.5px ui-monospace, monospace'; c.fillStyle='#7A8894';
+  c.fillText('따뜻함 HCQ →', pad, H-10);
+  c.save(); c.translate(13,pad+h); c.rotate(-Math.PI/2); c.fillText('희귀함 RQ →',0,0); c.restore();
+  if(rq!==null){
+    const x=pad+w*(hcq/100), y=pad+h*(1-rq/100);
+    c.beginPath(); c.arc(x,y,13,0,7); c.fillStyle='rgba(224,169,59,.14)'; c.fill();
+    c.beginPath(); c.arc(x,y,5,0,7); c.fillStyle='#E0A93B'; c.fill();
+    c.strokeStyle='#07090B'; c.lineWidth=1.5; c.stroke();
+    c.font='700 10px ui-monospace, monospace'; c.fillStyle='#E0A93B';
+    c.fillText('당신', Math.min(x+11, W-34), y+4);
+  }
+}
+
+/* ── 공유 카드 (1080×1350) ── */
+async function makeCard(res){
+  try{ await document.fonts.ready; }catch(e){}
+  const W=1080,H=1350, cv=document.createElement('canvas');
+  cv.width=W; cv.height=H; const c=cv.getContext('2d');
+  const g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0B1016'); g.addColorStop(1,'#07090B');
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.strokeStyle='#1E272F'; c.lineWidth=2; c.strokeRect(44,44,W-88,H-88);
+  c.textAlign='center';
+  c.font='500 22px ui-monospace, monospace'; c.fillStyle='#7A8894';
+  c.fillText('C O N S C I E N C E   C O O R D I N A T E S', W/2, 136);
+  c.font='800 128px "Nanum Myeongjo", serif';
+  c.fillStyle = res.t.id==='architect' ? '#A99AF8' : '#E0A93B';
+  c.fillText(res.t.ko, W/2, 300);
+  c.font='500 26px ui-monospace, monospace'; c.fillStyle='#7A8894';
+  c.fillText(res.t.en.toUpperCase(), W/2, 352);
+
+  /* 유형 설명 — 줄바꿈 */
+  c.font='300 30px "Noto Sans KR", sans-serif'; c.fillStyle='#8A99A6';
+  let ln='', y=424;
+  res.t.line.split(' ').forEach(word=>{
+    if(c.measureText(ln+word).width > W-260){ c.fillText(ln,W/2,y); y+=46; ln=''; }
+    ln += word+' ';
+  });
+  c.fillText(ln,W/2,y);
+
+  /* 두 축 */
+  const box=(x,label,val,col)=>{
+    c.fillStyle='#0E1216'; c.fillRect(x,566,420,186);
+    c.strokeStyle='#1E272F'; c.lineWidth=2; c.strokeRect(x,566,420,186);
+    c.textAlign='center';
+    c.font='500 22px ui-monospace, monospace'; c.fillStyle='#7A8894';
+    c.fillText(label, x+210, 614);
+    c.font='700 104px ui-monospace, monospace'; c.fillStyle=col;
+    c.fillText(val, x+210, 718);
+  };
+  box(70,'HCQ · 따뜻함', String(res.hcq), '#E0A93B');
+  box(590,'RQ · 희귀함', res.rq===null?'—':String(res.rq), '#A99AF8');
+
+  /* 희귀 문장 */
+  c.textAlign='center';
+  if(res.rq!==null){
+    c.fillStyle='#141020'; c.fillRect(70,812,940,180);
+    c.strokeStyle='#2A2142'; c.lineWidth=2; c.strokeRect(70,812,940,180);
+    c.font='700 40px "Nanum Myeongjo", serif'; c.fillStyle='#A99AF8';
+    c.fillText(`${res.N.toLocaleString()}명 중`, W/2, 882);
+    c.fillText(`나와 똑같이 답한 사람 ${res.twin}명`, W/2, 938);
+  }else{
+    c.font='300 30px "Noto Sans KR", sans-serif'; c.fillStyle='#7A8894';
+    c.fillText(`지금까지 ${res.N.toLocaleString()}명이 기록을 남겼습니다`, W/2, 896);
+  }
+
+  if(res.rq!==null && res.sameChoice>res.twin){
+    c.font='300 26px "Noto Sans KR", sans-serif'; c.fillStyle='#8A99A6';
+    c.fillText(`같은 선택을 한 사람은 ${res.sameChoice}명.`, W/2, 1050);
+    c.fillText(`같은 이유로 그렇게 한 사람은 ${res.twin}명.`, W/2, 1088);
+  }
+  c.font='400 34px "Nanum Myeongjo", serif'; c.fillStyle='#8A99A6';
+  c.fillText('다섯 개의 답 없는 질문.', W/2, 1152);
+  c.fillText('당신은 어디에 서 있습니까.', W/2, 1200);
+  c.font='500 24px ui-monospace, monospace'; c.fillStyle='#7A8894';
+  c.fillText(location.host || '양심 좌표', W/2, 1270);
+  return new Promise(r=>cv.toBlob(r,'image/png'));
+}
+
+/* ── 결과 ── */
+function renderResult(){
+  const res=score(); S.last=res;
+  const {hcq,rq,N,twin,sameChoice,t}=res;
+  stage.innerHTML = `
+    <div class="res">
+      <div class="verdict ${t.id==='architect'?'architect':''}">
+        <div class="en">${esc(t.en)}</div>
+        <div class="ko">${esc(t.ko)}</div>
+        <p class="line">${esc(t.line)}</p>
+      </div>
+
+      <div class="axes">
+        <div class="ax warm"><div class="k">HCQ · 따뜻함</div><div class="v">${hcq}</div>
+          <div class="n">고른 이유들이 타인 쪽으로 기운 정도</div>
+          <div class="bar"><i style="width:${hcq}%"></i></div></div>
+        <div class="ax rare"><div class="k">RQ · 희귀함</div><div class="v">${rq===null?'—':rq}</div>
+          <div class="n">${rq===null?`${N.toLocaleString()}명 기록됨 · 30명이 모이면 계산됩니다`:'같은 길을 지난 사람이 드문 정도'}</div>
+          <div class="bar"><i style="width:${rq===null?0:rq}%"></i></div></div>
+      </div>
+
+      ${rq!==null?`<div class="rare-line">
+        <div class="big">${N.toLocaleString()}명 중<br>당신과 똑같이 답한 사람은 ${twin}명입니다</div>
+        <div class="sm">${((twin/Math.max(N,1))*100).toFixed(1)}% · 선택과 이유까지 전부 일치</div>
+        ${sameChoice>twin?`<div class="sm2">같은 선택을 한 사람은 ${sameChoice}명이지만,<br>같은 이유로 그렇게 한 사람은 ${twin}명뿐입니다</div>`:''}
+      </div>`:''}
+
+      <div class="map"><h3>좌표</h3>
+        <p class="cap">가로는 따뜻함, 세로는 희귀함입니다. 두 축은 서로 독립입니다. 착한 것이 흔하다는 법도, 희귀한 것이 차갑다는 법도 없습니다.</p>
+        <canvas id="cv"></canvas>
+        <div class="legend"><span><i style="background:#E0A93B"></i>당신</span>
+          <span><i style="background:rgba(142,123,245,.5)"></i>설계자 구역 — 깊이 배려하면서 드문 길</span></div>
+      </div>
+
+      <div class="answers"><h3>당신이 남긴 다섯 개의 답</h3>
+        ${S.picks.map(([g,r],i)=>`<div class="arow">
+          <span class="at">${esc(Q[i].tag)}</span>
+          <b>${esc(Q[i].o[g].t)}</b>
+          <em>${esc(Q[i].o[g].r[r].t)}</em></div>`).join('')}
+      </div>
+
+      <div class="note"><b>HCQ는 설계값이고 RQ는 측정값입니다.</b>
+        따뜻함 점수는 각 '이유'에 미리 부여해 둔 이타성 가중치의 평균입니다. 재는 게 아니라 정해 둔 기준입니다.
+        희귀함 점수는 실제 응답자 ${N.toLocaleString()}명의 분포에서 계산합니다. 사람이 늘수록 정확해집니다.
+        어느 쪽도 당신을 채점하지 않습니다.</div>
+
+      <div class="acts">
+        <button class="btn primary" id="share">결과 카드 공유하기</button>
+        <button class="btn" id="copy">문장으로 복사</button>
+        <button class="btn" id="again">다시 해보기</button>
+      </div>
+
+      <div class="mission">
+        <p>지금 만들어지는 기계들은 우리가 남긴 글을 읽고 판단을 배웁니다.
+        인류가 어디에서 갈라지는지는 아직 어디에도 제대로 적혀 있지 않습니다.
+        이 기록이 쓰일지는 아무도 모릅니다. 다만 남기지 않으면 확실히 없습니다.</p>
+        <div class="fine">RECORDED / ${N.toLocaleString()}</div>
+      </div>
+    </div>`;
+
+  drawMap($('#cv'),hcq,rq);
+  if(!renderResult._rz){ renderResult._rz=true;
+    addEventListener('resize',()=>{ const cv=$('#cv'); if(cv&&S.last) drawMap(cv,S.last.hcq,S.last.rq); },{passive:true}); }
+
+  $('#again').onclick = ()=>{ S.i=0; S.stage=0; S.g=null; S.picks=[]; boot(); scrollTo({top:0,behavior:'smooth'}); };
+  $('#copy').onclick  = ()=> copyText(shareText(res));
+  $('#share').onclick = async e=>{
+    const b=e.currentTarget; b.disabled=true; b.textContent='카드 만드는 중…';
+    try{
+      const blob = await makeCard(res);
+      const file = new File([blob],'양심좌표.png',{type:'image/png'});
+      if(navigator.canShare?.({files:[file]})){
+        await navigator.share({files:[file], text:shareText(res)});
+      }else{
+        const u=URL.createObjectURL(blob), a=document.createElement('a');
+        a.href=u; a.download='양심좌표.png'; a.click();
+        setTimeout(()=>URL.revokeObjectURL(u),4000);
+        toast('카드를 저장했습니다');
+      }
+    }catch(err){ if(err?.name!=='AbortError') toast('공유가 막혀 있습니다. 문장 복사를 써주세요'); }
+    b.disabled=false; b.textContent='결과 카드 공유하기';
+  };
+}
+function shareText(r){
+  return `나의 양심 좌표: ${r.t.ko} (${r.t.en})\n따뜻함 ${r.hcq}`
+    + (r.rq!==null?` · 희귀함 ${r.rq}\n${r.N.toLocaleString()}명 중 나와 똑같이 답한 사람 ${r.twin}명`:'')
+    + `\n\n다섯 개의 답 없는 질문. 당신은 어디에 서 있습니까.\n${location.href}`;
+}
+async function copyText(txt){
+  try{ await navigator.clipboard.writeText(txt); toast('복사했습니다'); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=txt;
+    ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('복사했습니다'); }catch(_){ toast('복사가 막혀 있습니다'); }
+    ta.remove(); }
+}
+
+async function finish(){
+  const pre = score();
+  await Store.save({path:path(), hcq:pre.hcq, type:pre.t.id});
+  S.stats = await Store.stats();
+  $('#nCount').textContent = (S.stats.n||0).toLocaleString();
+  renderResult();
+  scrollTo({top:0,behavior:'smooth'});
+}
+async function boot(){
+  S.stats = await Store.stats();
+  $('#nCount').textContent = (S.stats.n||0).toLocaleString();
+  renderQ();
+}
+boot();
+</script>
+</body>
+</html>
