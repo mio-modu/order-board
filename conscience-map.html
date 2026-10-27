@@ -588,16 +588,34 @@ function renderResult(){
       const file = new File([blob],'양심좌표.png',{type:'image/png'});
       if(navigator.canShare?.({files:[file]})){
         await navigator.share({files:[file], text:shareText(res)});
-      }else{
-        const u=URL.createObjectURL(blob), a=document.createElement('a');
-        a.href=u; a.download='양심좌표.png'; a.click();
-        setTimeout(()=>URL.revokeObjectURL(u),4000);
+      }else if(await saveFile(blob,'양심좌표.png')){
         toast('카드를 저장했습니다');
+      }else{
+        await copyText(shareText(res));
+        toast('이미지 저장이 막혀 있어 문장으로 복사했습니다');
       }
     }catch(err){ if(err?.name!=='AbortError') toast('공유가 막혀 있습니다. 문장 복사를 써주세요'); }
     b.disabled=false; b.textContent='결과 카드 공유하기';
   };
 }
+
+/* 저장 경로가 환경마다 다르다. 되는 것부터 차례로 시도하고, 다 막히면 false. */
+async function saveFile(blob, name){
+  try{
+    if(typeof claude!=='undefined' && claude.use){
+      const d = await claude.use('downloads');
+      if(d){ await d.save({filename:name, data:blob}); return true; }
+    }
+  }catch(e){ return false; }
+  try{
+    const u=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=u; a.download=name; a.rel='noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),4000);
+    return true;
+  }catch(e){ return false; }
+}
+
 function shareText(r){
   return `나의 양심 좌표: ${r.t.ko} (${r.t.en})\n따뜻함 ${r.hcq}`
     + (r.rq!==null?` · 희귀함 ${r.rq}\n${r.N.toLocaleString()}명 중 나와 똑같이 답한 사람 ${r.twin}명`:'')
