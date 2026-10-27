@@ -39,14 +39,24 @@ Supabase 없이 배포하면 응답이 **각자의 브라우저에만** 저장�
 
 **Create new project** 누르면 1~2분 걸립니다. 커피 한 잔.
 
-### 1-2. 표 만들기 (SQL 붙여넣기)
+### 1-2. 표와 함수 만들기
 
-왼쪽 메뉴에서 **SQL Editor** → **New query** →
-아래를 통째로 붙여넣고 오른쪽 아래 **Run**.
+왼쪽 메뉴 **SQL Editor** → **New query**.
+
+> ⚠ **반드시 네 번에 나눠서 돌리세요.** 한꺼번에 붙여넣으면
+> 편집기가 구문을 쪼개 보내는 순서가 꼬여, 표가 만들어지기 전에
+> 함수가 실행되면서 실패합니다. 실제로 그렇게 걸렸습니다.
+>
+> 그리고 **"No limit"** 으로 두고 실행하세요. `limit 100` 이 자동으로
+> 붙으면 `create` 문에서 문법 오류가 납니다.
+>
+> **프로젝트를 확인하세요.** 왼쪽 위에 지금 어느 프로젝트인지 나옵니다.
+> 여러 개를 쓰고 있다면 중간에 바뀌어 있을 수 있습니다.
+
+#### 【1】 표와 보안 정책
 
 ```sql
--- 1) 기록을 담을 표
-create table if not exists conscience_logs (
+create table if not exists public.conscience_logs (
   id   bigint generated always as identity primary key,
   path text not null,
   hcq  int,
@@ -54,56 +64,71 @@ create table if not exists conscience_logs (
   at   timestamptz default now()
 );
 
--- 2) 보안을 켜고, 넣기와 읽기만 연다 (수정·삭제는 아무에게도 열지 않는다)
-alter table conscience_logs enable row level security;
+alter table public.conscience_logs enable row level security;
 
-drop policy if exists "anyone can insert" on conscience_logs;
-drop policy if exists "anyone can read"   on conscience_logs;
+drop policy if exists "anyone can insert" on public.conscience_logs;
+drop policy if exists "anyone can read"   on public.conscience_logs;
 
 create policy "anyone can insert"
-  on conscience_logs for insert to anon with check (true);
+  on public.conscience_logs for insert to anon with check (true);
 
 create policy "anyone can read"
-  on conscience_logs for select to anon using (true);
+  on public.conscience_logs for select to anon using (true);
 
-create index if not exists conscience_logs_path_idx on conscience_logs (path);
+create index if not exists conscience_logs_path_idx
+  on public.conscience_logs (path);
+```
 
--- 3) 집계 함수.
---    이게 있으면 방문자는 1KB만 받는다. 없으면 누적 기록을 통째로 받게 되어
---    사람이 늘수록 전송량이 제곱으로 불어나고 무료 한도가 2만 명쯤에서 끝난다.
---    path 는 "01-10-02-21-13" 꼴로 길이가 고정이라 자리를 그대로 잘라 쓴다.
---    (질문 수나 형식을 바꾸면 아래 substr 자리도 같이 바꿔야 한다)
-create or replace function conscience_stats(mine text default null)
+#### 【2】 표가 생겼는지 확인 — 꼭 하세요
+
+```sql
+select count(*) as 표있음 from information_schema.tables
+where table_schema='public' and table_name='conscience_logs';
+```
+
+**`1` 이 나와야 다음으로 갑니다.** `0` 이면 【1】이 실패한 것입니다.
+
+#### 【3】 집계 함수
+
+```sql
+create or replace function public.conscience_stats(mine text default null)
 returns json
 language sql
 stable
 as $$
   select json_build_object(
-    'n',  (select count(*) from conscience_logs),
-    'q0', (select json_object_agg(k,c) from (select substr(path,1,2)  k, count(*) c from conscience_logs group by 1) t),
-    'q1', (select json_object_agg(k,c) from (select substr(path,4,2)  k, count(*) c from conscience_logs group by 1) t),
-    'q2', (select json_object_agg(k,c) from (select substr(path,7,2)  k, count(*) c from conscience_logs group by 1) t),
-    'q3', (select json_object_agg(k,c) from (select substr(path,10,2) k, count(*) c from conscience_logs group by 1) t),
-    'q4', (select json_object_agg(k,c) from (select substr(path,13,2) k, count(*) c from conscience_logs group by 1) t),
-    'twin', (select count(*) from conscience_logs
+    'n',  (select count(*) from public.conscience_logs),
+    'q0', (select json_object_agg(k,c) from (select substr(path,1,2)  k, count(*) c from public.conscience_logs group by 1) t),
+    'q1', (select json_object_agg(k,c) from (select substr(path,4,2)  k, count(*) c from public.conscience_logs group by 1) t),
+    'q2', (select json_object_agg(k,c) from (select substr(path,7,2)  k, count(*) c from public.conscience_logs group by 1) t),
+    'q3', (select json_object_agg(k,c) from (select substr(path,10,2) k, count(*) c from public.conscience_logs group by 1) t),
+    'q4', (select json_object_agg(k,c) from (select substr(path,13,2) k, count(*) c from public.conscience_logs group by 1) t),
+    'twin', (select count(*) from public.conscience_logs
                where mine is not null and path = mine),
-    'same', (select count(*) from conscience_logs
+    'same', (select count(*) from public.conscience_logs
                where mine is not null
                  and substr(path,1,1)  = substr(mine,1,1)
                  and substr(path,4,1)  = substr(mine,4,1)
                  and substr(path,7,1)  = substr(mine,7,1)
                  and substr(path,10,1) = substr(mine,10,1)
                  and substr(path,13,1) = substr(mine,13,1))
-  );
+  )
 $$;
-
-grant execute on function conscience_stats(text) to anon;
 ```
 
-`Success. No rows returned` 가 뜨면 된 겁니다.
+> 함수 본문 안에는 세미콜론을 두지 않았습니다. 편집기가 `$$` 안의 `;` 를
+> 구문 끝으로 잘못 보고 쪼개는 경우가 있습니다.
 
-> 이 SQL은 **몇 번을 다시 돌려도 안전합니다.** 중간에 꼬였다 싶으면
-> 그냥 처음부터 다시 붙여넣고 Run 하세요.
+#### 【4】 권한 부여와 확인
+
+```sql
+grant execute on function public.conscience_stats(text) to anon;
+notify pgrst, 'reload schema';
+select public.conscience_stats();
+```
+
+`{"n": 0, "q0": null, ..., "twin": 0, "same": 0}` 이 나오면 완료입니다.
+기록이 아직 0건이라 `q0`가 `null`인 것은 정상입니다.
 
 **무엇을 한 건지:**
 - 기록을 담을 표를 만들고
@@ -229,18 +254,6 @@ const SUPABASE = {
 ---
 
 ## 나중에 알려주셔야 할 것
-
-### 집계 함수가 제대로 들어갔는지 확인
-
-SQL Editor에서 이것만 따로 실행해 보세요.
-
-```sql
-select conscience_stats();
-```
-
-`{"n": 0, "q0": null, ...}` 같은 JSON이 나오면 된 겁니다.
-**오류가 나면 사이트는 돌아가지만 전송량 한계를 그대로 맞습니다.**
-오류 메시지를 알려주세요.
 
 ### 질문을 고치거나 늘리면
 
